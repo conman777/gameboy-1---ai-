@@ -1,0 +1,42 @@
+{
+  "name": "gameboy-ai-player",
+  "version": "1.0.0",
+  "description": "A web app that lets AI play Game Boy games using OpenRouter API",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext js,jsx,ts,tsx",
+    "lint:fix": "eslint . --ext js,jsx,ts,tsx --fix"
+  },
+  "dependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "axios": "^1.6.0",
+    "lucide-react": "^0.294.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "wasmboy": "^0.7.1"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "@vitejs/plugin-react": "^4.1.0",
+    "eslint": "^8.53.0",
+    "eslint-plugin-react": "^7.33.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "typescript": "^5.2.0",
+    "vite": "^5.0.0"
+  },
+  "keywords": [
+    "gameboy",
+    "emulator",
+    "ai",
+    "openrouter",
+    "react",
+    "gaming"
+  ],
+  "author": "AI Assistant",
+  "license": "MIT"
+}
