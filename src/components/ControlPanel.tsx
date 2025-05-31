@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Brain, Cpu, Upload } from 'lucide-react';
+import { Settings, Cpu } from 'lucide-react';
 import { AIConfig, GameState } from '../App';
 
 interface ControlPanelProps {
