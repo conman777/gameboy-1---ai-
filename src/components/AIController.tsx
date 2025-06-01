@@ -1,13 +1,14 @@
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import axios from 'axios';
 import { AIConfig, GameState, LogEntry } from '../App';
+import { GameBoyEmulatorRef } from './GameBoyEmulator'; // Import GameBoyEmulatorRef
 
 interface AIControllerProps {
   config: AIConfig;
   gameState: GameState;
   onStatusChange: (status: GameState['aiStatus']) => void;
   onLog: (type: LogEntry['type'], message: string) => void;
-  emulatorRef: React.RefObject<any>;
+  emulatorRef: React.RefObject<GameBoyEmulatorRef>;
 }
 
 export interface AIControllerRef {
@@ -20,15 +21,15 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
   ({ config, gameState, onStatusChange, onLog, emulatorRef }, ref) => {
     const intervalRef = useRef<number | null>(null);
     const isPlayingRef = useRef(false);
-    const lastScreenDataRef = useRef<ImageData | null>(null);
+    // const lastScreenDataRef = useRef<ImageData | null>(null);
     const lastDecisionRef = useRef<string | null>(null);
     const decisionCountRef = useRef<{ [key: string]: number }>({});
 
     useImperativeHandle(ref, () => ({
       startPlaying: () => {
-        console.log('AIController: startPlaying called');
-        console.log('Config:', { hasApiKey: !!config.apiKey, model: config.model });
-        console.log('GameState:', { currentGame: gameState.currentGame, isPlaying: gameState.isPlaying, aiEnabled: gameState.aiEnabled });
+        // console.log('AIController: startPlaying called');
+        // console.log('Config:', { hasApiKey: !!config.apiKey, model: config.model });
+        // console.log('GameState:', { currentGame: gameState.currentGame, isPlaying: gameState.isPlaying, aiEnabled: gameState.aiEnabled });
         
         if (!config.apiKey) {
           onLog('error', 'OpenRouter API key is required');
@@ -43,41 +44,41 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
         startAILoop();
       },
       stopPlaying: () => {
-        console.log('AIController: stopPlaying called');
+        // console.log('AIController: stopPlaying called');
         stopAILoop();
       },
       testSequence: async () => {
         if (!emulatorRef.current?.isReady?.()) {
-          console.log('AIController: Emulator not ready for test sequence');
+          // console.log('AIController: Emulator not ready for test sequence');
           onLog('error', 'Emulator not ready for test sequence');
           return;
         }
 
-        console.log('AIController: Starting hardcoded test sequence for Tetris');
+        // console.log('AIController: Starting hardcoded test sequence for Tetris');
         onLog('ai', '🧪 Testing hardcoded sequence: START → wait → A');
         
         try {
           // Press START
-          console.log('AIController: Test sequence - pressing START');
+          // console.log('AIController: Test sequence - pressing START');
           emulatorRef.current.pressButton('START');
           await new Promise(resolve => setTimeout(resolve, 200));
           emulatorRef.current.releaseButton('START');
           
           // Wait 1 second
-          console.log('AIController: Test sequence - waiting 1 second');
+          // console.log('AIController: Test sequence - waiting 1 second');
           await new Promise(resolve => setTimeout(resolve, 1000));
           
           // Press A
-          console.log('AIController: Test sequence - pressing A');
+          // console.log('AIController: Test sequence - pressing A');
           emulatorRef.current.pressButton('A');
           await new Promise(resolve => setTimeout(resolve, 200));
           emulatorRef.current.releaseButton('A');
           
-          console.log('AIController: Test sequence completed');
+          // console.log('AIController: Test sequence completed');
           onLog('ai', '✅ Test sequence completed: START → A');
           
         } catch (error) {
-          console.error('AIController: Test sequence failed:', error);
+          // console.error('AIController: Test sequence failed:', error);
           onLog('error', `Test sequence failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
@@ -85,11 +86,11 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
 
     const startAILoop = () => {
       if (isPlayingRef.current) {
-        console.log('AIController: AI loop already running');
+        // console.log('AIController: AI loop already running');
         return;
       }
       
-      console.log('AIController: Starting AI loop');
+      // console.log('AIController: Starting AI loop');
       isPlayingRef.current = true;
       onStatusChange('thinking');
       onLog('ai', 'AI started playing');
@@ -106,54 +107,55 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
             emulatorReady: emulatorRef.current?.isReady?.() || false
           };
           
-          console.log('AIController: AI loop tick', currentConditions);
+          // console.log('AIController: AI loop tick', currentConditions);
           
           if (!isPlayingRef.current) {
-            console.log('AIController: Stopping - AI loop not active');
+            // console.log('AIController: Stopping - AI loop not active');
             break;
           }
           
           if (!gameState.aiEnabled) {
-            console.log('AIController: Stopping - AI not enabled in game state');
+            // console.log('AIController: Stopping - AI not enabled in game state');
             break;
           }
           
           if (!gameState.isPlaying) {
-            console.log('AIController: Stopping - Game not playing');
+            // console.log('AIController: Stopping - Game not playing');
             break;
           }
           
           if (!config.apiKey) {
-            console.log('AIController: Stopping - No API key');
+            // console.log('AIController: Stopping - No API key');
             break;
           }
           
           if (!gameState.currentGame) {
-            console.log('AIController: Stopping - No game loaded');
+            // console.log('AIController: Stopping - No game loaded');
             break;
           }
 
           // Check if emulator is ready
           if (!emulatorRef.current?.isReady?.()) {
-            console.log('AIController: Waiting for WasmBoy to be ready...');
+            // console.log('AIController: Waiting for WasmBoy to be ready...');
             onLog('ai', 'Waiting for emulator to be ready...');
             await new Promise(resolve => setTimeout(resolve, 1000));
             continue;
           }
 
-          console.log('AIController: All conditions met, making AI decision...');
+          // console.log('AIController: All conditions met, making AI decision...');
           await makeAIDecision();
           
           // Wait 500ms between AI decisions
           await new Promise(resolve => setTimeout(resolve, 500));
         }
         
-        console.log('AIController: AI loop ended');
+        // console.log('AIController: AI loop ended');
         stopAILoop();
       };
 
       aiLoop().catch(error => {
-        console.error('AIController: AI loop error:', error);
+        // console.error('AIController: AI loop error:', error);
+        onLog('error', `AI loop encountered an error: ${error instanceof Error ? error.message : "Unknown error"}`);
         stopAILoop();
       });
     };
@@ -172,104 +174,68 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
 
     const makeAIDecision = async () => {
       try {
-        console.log('AIController: Making AI decision...');
+        // console.log('AIController: Making AI decision...');
         onStatusChange('thinking');
         
-        // Check if emulator is ready
         if (!emulatorRef.current?.isReady?.()) {
-          console.log('AIController: Emulator not ready, skipping decision');
+          // console.log('AIController: Emulator not ready, skipping decision');
           onLog('error', 'Emulator not ready for input');
           return;
         }
         
-        // Get current screen data
         const screenData = emulatorRef.current?.getScreenData();
         if (!screenData) {
-          console.log('AIController: No screen data available');
+          // console.log('AIController: No screen data available');
           onLog('error', 'Could not get screen data');
           return;
         }
+        // console.log('AIController: Got screen data', { width: screenData.width, height: screenData.height });
 
-        console.log('AIController: Got screen data', { width: screenData.width, height: screenData.height });
-
-        // Convert screen data to base64 image for vision AI
-        const base64Image = await convertScreenDataToBase64(screenData);
-        console.log('AIController: Converted screen to base64 image');
-        
-        const decision = await getAIDecisionWithVision(base64Image);
-        console.log('AIController: AI decision:', decision);
+        // Vision capability is currently disabled as convertScreenDataToBase64 is commented out
+        const decision = await getAIDecisionWithVision();
+        // console.log('AIController: AI decision:', decision);
         
         if (decision && emulatorRef.current) {
           onStatusChange('playing');
-          console.log('AIController: About to press button:', decision);
-          console.log('AIController: Emulator ref exists:', !!emulatorRef.current);
-          console.log('AIController: Emulator pressButton method:', typeof emulatorRef.current.pressButton);
-          
-          console.log(`AIController: Executing button decision: ${decision}`);
+          // console.log(`AIController: Executing button decision: ${decision}`);
           onLog('ai', `🎮 Pressing ${decision}`);
           
-          // Use improved button press method with proper timing
           try {
-            // Capture screen before button press
             const screenBefore = emulatorRef.current?.getScreenData();
-            
-            // Press the button
             emulatorRef.current.pressButton(decision);
-            console.log(`AIController: Button ${decision} pressed`);
-            
-            // Hold for 500ms (increased for better game compatibility)
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Release the button
+            await new Promise(resolve => setTimeout(resolve, 500)); // Hold duration
             emulatorRef.current.releaseButton(decision);
-            console.log(`AIController: Button ${decision} released`);
-            
-            // Wait a bit more and check if screen changed
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 300)); // Wait for screen to update
             const screenAfter = emulatorRef.current?.getScreenData();
             
             if (screenBefore && screenAfter) {
               let pixelsDifferent = 0;
               for (let i = 0; i < Math.min(screenBefore.data.length, screenAfter.data.length); i++) {
-                if (screenBefore.data[i] !== screenAfter.data[i]) {
-                  pixelsDifferent++;
-                }
+                if (screenBefore.data[i] !== screenAfter.data[i]) pixelsDifferent++;
               }
-              
-              console.log(`AIController: Screen change detection - ${pixelsDifferent} pixels different`);
               if (pixelsDifferent > 0) {
                 onLog('ai', `✅ Button ${decision} caused screen change (${pixelsDifferent} pixels)`);
               } else {
-                onLog('ai', `⚠️ Button ${decision} did not change screen - may be ineffective`);
+                onLog('ai', `⚠️ Button ${decision} did not change screen`);
               }
             }
-            
-            // Update decision tracking
             lastDecisionRef.current = decision;
-            decisionCountRef.current = {
-              ...decisionCountRef.current,
-              [decision]: (decisionCountRef.current[decision] || 0) + 1
-            };
-            
+            decisionCountRef.current[decision] = (decisionCountRef.current[decision] || 0) + 1;
           } catch (error) {
-            console.error('AIController: Error executing button press:', error);
+            // console.error('AIController: Error executing button press:', error);
             onLog('error', `Failed to press ${decision}: ${error instanceof Error ? error.message : 'Unknown error'}`);
           }
         } else {
-          console.log('AIController: No valid decision or emulator ref', {
-            decision,
-            hasEmulatorRef: !!emulatorRef.current
-          });
+          // console.log('AIController: No valid decision or emulator ref', { decision, hasEmulatorRef: !!emulatorRef.current });
         }
-        
       } catch (error) {
-        console.error('AIController: AI decision error:', error);
+        // console.error('AIController: AI decision error:', error);
         onStatusChange('error');
         onLog('error', `AI error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     };
 
-    const convertScreenDataToBase64 = async (screenData: ImageData): Promise<string> => {
+    /* const convertScreenDataToBase64 = async (screenData: ImageData): Promise<string> => {
       return new Promise((resolve) => {
         // Create a canvas to convert ImageData to base64
         const canvas = document.createElement('canvas');
@@ -285,9 +251,9 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
         const base64 = canvas.toDataURL('image/png').split(',')[1];
         resolve(base64);
       });
-    };
+    }; */
 
-    const getAIDecisionWithVision = async (base64Image: string): Promise<string | null> => {
+    const getAIDecisionWithVision = async (base64ImageArg?: string): Promise<string | null> => { // Renamed to avoid conflict
       try {
         const gameTitle = gameState.currentGame || 'Unknown Game';
         
@@ -296,37 +262,23 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
         const recentDecisionCounts = decisionCountRef.current;
         
         // Log current decision state
-        console.log('AIController: Decision tracking state:', {
-          lastDecision,
-          recentDecisionCounts,
-          totalDecisions: Object.values(recentDecisionCounts).reduce((sum, count) => sum + count, 0)
-        });
+        // console.log('AIController: Decision tracking state:', { lastDecision, recentDecisionCounts });
         
-        // If we've pressed the same button too many times, force a different choice
-        const maxSameDecision = 2; // Reduced from 3 to 2 for faster intervention
+        const maxSameDecision = 2;
         const shouldAvoidLastDecision = lastDecision && (recentDecisionCounts[lastDecision] || 0) >= maxSameDecision;
         
-        // Also check if we're alternating between just two buttons (like START and A)
-        const topTwoButtons = Object.entries(recentDecisionCounts)
-          .sort(([,a], [,b]) => b - a)
-          .slice(0, 2);
+        const topTwoButtons = Object.entries(recentDecisionCounts).sort(([,a], [,b]) => b - a).slice(0, 2);
         const isAlternatingPattern = topTwoButtons.length === 2 && 
           topTwoButtons.every(([,count]) => count >= 2) &&
           Object.keys(recentDecisionCounts).length <= 2;
         
-        console.log('AIController: Pattern analysis:', {
-          shouldAvoidLastDecision,
-          isAlternatingPattern,
-          topTwoButtons
-        });
+        // console.log('AIController: Pattern analysis:', { shouldAvoidLastDecision, isAlternatingPattern });
         
-        // Reset counters if they get too high
         if (Object.values(recentDecisionCounts).some(count => count > 8)) {
-          console.log('AIController: Resetting decision counters to prevent loops');
+          // console.log('AIController: Resetting decision counters to prevent loops');
           decisionCountRef.current = {};
         }
 
-        // Check if the current model supports vision
         const isVisionModel = config.model.includes('claude') || 
                              config.model.includes('gpt-4') || 
                              config.model.includes('gemini') ||
@@ -334,10 +286,9 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
 
         let messages;
         
-        if (isVisionModel) {
-          // Use vision-based prompt for models that support images
-          console.log('AIController: Using vision-based AI analysis');
-          console.log('AIController: Image size:', base64Image.length, 'characters');
+        if (isVisionModel && base64ImageArg) { // Ensure base64ImageArg is present for vision
+          // console.log('AIController: Using vision-based AI analysis');
+          // if (base64ImageArg) { console.log('AIController: Image size:', base64ImageArg.length, 'characters'); }
           onLog('ai', `AI is analyzing the game screen visually with ${config.model}...`);
           
           let avoidanceText = '';
@@ -401,18 +352,18 @@ Look at the game screen and determine what button will advance past the current 
                 {
                   type: 'image_url',
                   image_url: {
-                    url: `data:image/png;base64,${base64Image}`
+                    url: `data:image/png;base64,${base64ImageArg}` // Use renamed variable
                   }
                 }
               ]
             }
           ];
         } else {
-          // Fallback to text-based analysis for non-vision models
-          console.log('AIController: Using text-based analysis (model does not support vision)');
+          // Fallback to text-based analysis for non-vision models (or if base64ImageArg is missing)
+          // console.log('AIController: Using text-based analysis');
           onLog('ai', `AI is analyzing the game screen (text-based) with ${config.model}...`);
           
-          const screenAnalysis = analyzeScreenForTextModel(base64Image);
+          const screenAnalysis = analyzeScreenForTextModel();
           
           messages = [
             {
@@ -440,7 +391,7 @@ Respond with your reasoning and decision.`
           ];
         }
 
-        console.log('AIController: Sending request to OpenRouter API...');
+        // console.log('AIController: Sending request to OpenRouter API...');
         const response = await axios.post(
           'https://openrouter.ai/api/v1/chat/completions',
           {
@@ -460,9 +411,8 @@ Respond with your reasoning and decision.`
         );
 
         const fullResponse = response.data.choices[0]?.message?.content?.trim();
-        console.log('AIController: Full AI response:', fullResponse);
+        // console.log('AIController: Full AI response:', fullResponse);
         
-        // Log the AI's analysis to the game log and extract decision
         let decision = fullResponse; // Default to full response
         
         if (fullResponse) {
@@ -473,31 +423,27 @@ Respond with your reasoning and decision.`
           
           if (observationMatch) {
             const observation = observationMatch[1].trim();
-            console.log('AIController: AI Observation:', observation);
+            // console.log('AIController: AI Observation:', observation);
             onLog('ai', `👁️ AI sees: ${observation}`);
           }
           
           if (reasoningMatch) {
             const reasoning = reasoningMatch[1].trim();
-            console.log('AIController: AI Reasoning:', reasoning);
+            // console.log('AIController: AI Reasoning:', reasoning);
             onLog('ai', `🧠 AI thinks: ${reasoning}`);
           }
           
-          // Extract decision - this is the key fix!
           if (decisionMatch) {
             decision = decisionMatch[1];
-            console.log('AIController: Extracted decision from DECISION field:', decision);
+            // console.log('AIController: Extracted decision from DECISION field:', decision);
           } else {
-            // If no structured response, try to extract just the button name
             const validButtons = ['UP', 'DOWN', 'LEFT', 'RIGHT', 'A', 'B', 'START', 'SELECT'];
-            const foundButton = validButtons.find(button => 
-              fullResponse.toUpperCase().includes(button)
-            );
+            const foundButton = validButtons.find(button => fullResponse.toUpperCase().includes(button));
             if (foundButton) {
               decision = foundButton;
-              console.log('AIController: Extracted decision from text search:', decision);
+              // console.log('AIController: Extracted decision from text search:', decision);
             } else {
-              console.log('AIController: No valid button found, using full response:', decision);
+              // console.log('AIController: No valid button found, using full response:', decision);
             }
           }
         }
@@ -515,17 +461,17 @@ Respond with your reasoning and decision.`
         }
         
         if (validButtons.includes(buttonDecision)) {
-          console.log(`AIController: Valid button decision: ${buttonDecision}`);
+          // console.log(`AIController: Valid button decision: ${buttonDecision}`);
           return buttonDecision;
         } else {
-          console.warn(`AIController: Invalid button decision: ${buttonDecision}`);
-          onLog('error', `Invalid button: ${buttonDecision}`);
+          // console.warn(`AIController: Invalid button decision: ${buttonDecision}`);
+          onLog('error', `Invalid button: ${String(buttonDecision)}`);
           return null;
         }
         
       } catch (error) {
-        console.error('OpenRouter API error:', error);
-        
+        // console.error('OpenRouter API error:', error);
+        onLog('error', `OpenRouter API error: ${error instanceof Error ? error.message : "Unknown error"}`);
         if (axios.isAxiosError(error)) {
           if (error.response?.status === 401) {
             throw new Error('Invalid API key');
@@ -542,7 +488,7 @@ Respond with your reasoning and decision.`
       return null; // Add explicit return for when no decision is made
     };
 
-    const analyzeScreenForTextModel = (base64Image: string): string => {
+    const analyzeScreenForTextModel = (/* base64Image: string */): string => { // base64Image is unused
       // For non-vision models, provide a basic text description
       // This is a fallback when vision models aren't available
       const gameTitle = gameState.currentGame?.toLowerCase() || '';
@@ -572,20 +518,14 @@ Respond with your reasoning and decision.`
 
     // Stop AI when game stops or AI is disabled
     React.useEffect(() => {
-      console.log('AIController: useEffect triggered', {
-        isPlaying: gameState.isPlaying,
-        aiEnabled: gameState.aiEnabled,
-        currentGame: gameState.currentGame,
-        hasApiKey: !!config.apiKey
-      });
+      // console.log('AIController: useEffect triggered for AI start/stop logic', { /* gameState details */ });
       
       if (!gameState.isPlaying || !gameState.aiEnabled) {
-        console.log('AIController: Stopping AI due to state change');
+        // console.log('AIController: Conditions not met for AI to run, ensuring stopped.');
         stopAILoop();
       } else if (gameState.isPlaying && gameState.aiEnabled && gameState.currentGame && config.apiKey) {
-        // Auto-start AI if all conditions are met
-        console.log('AIController: Auto-starting AI due to state change');
-        if (!isPlayingRef.current) {
+        // console.log('AIController: Conditions met for AI to run, ensuring started.');
+        if (!isPlayingRef.current) { // Only start if not already running
           startAILoop();
         }
       }
