@@ -431,42 +431,155 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
     };
 
     return (
-      <div className="emulator-wrapper-styles"> {/* Assume styles are defined in CSS */}
-        <div className="canvas-wrapper-styles">
+      <div style={{
+        background: 'linear-gradient(145deg, #9bb563, #8faa5a)',
+        padding: '20px',
+        borderRadius: '12px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+        border: '3px solid #7a9147',
+        maxWidth: '400px',
+        margin: '0 auto'
+      }}>
+        <div style={{
+          background: '#1e2124',
+          padding: '16px',
+          borderRadius: '8px',
+          marginBottom: '16px',
+          border: '2px solid #36393f'
+        }}>
           <canvas
             ref={canvasRef}
             width={160}
             height={144}
-            className="canvas-styles"
+            style={{
+              width: '100%',
+              height: 'auto',
+              imageRendering: 'pixelated',
+              background: '#0f380f',
+              border: '2px solid #306230'
+            }}
           />
         </div>
+
         {!gameData && (
-          <div className="upload-prompt-styles">
-            <label className="upload-label-styles">
-              <Upload size={16} /> Load ROM (.gb/.gbc)
-              <input type="file" accept=".gb,.gbc" onChange={handleFileUpload} style={{ display: 'none' }} />
+          <div style={{
+            textAlign: 'center',
+            marginBottom: '16px'
+          }}>
+            <label style={{
+              display: 'inline-block',
+              padding: '12px 24px',
+              background: 'linear-gradient(145deg, #4a5568, #2d3748)',
+              color: 'white',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              border: '2px solid #1a202c',
+              fontSize: '14px',
+              fontWeight: 'bold'
+            }}>
+              <Upload size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+              Load ROM (.gb/.gbc)
+              <input
+                type="file"
+                accept=".gb,.gbc"
+                onChange={handleFileUpload}
+                style={{ display: 'none' }}
+              />
             </label>
           </div>
         )}
+
         {gameData && (
-          <div className="keyboard-info-styles">
+          <div style={{
+            marginTop: '12px',
+            padding: '8px',
+            background: 'rgba(30, 33, 36, 0.3)',
+            borderRadius: '4px',
+            fontSize: '10px',
+            color: '#1e2124',
+            textAlign: 'center'
+          }}>
             <strong>Keyboard:</strong> Arrow Keys = D-Pad • Z = A • X = B • Enter = Start • Space = Select
           </div>
         )}
+
         {gameData && wasmBoyInitialized.current && (
-          <div className="manual-test-styles">
-            <div>🧪 Manual Input Tests</div>
-            <div>
+          <div style={{
+            marginTop: '12px',
+            padding: '12px',
+            background: 'rgba(155, 181, 99, 0.1)',
+            borderRadius: '4px',
+            border: '1px solid rgba(155, 181, 99, 0.3)'
+          }}>
+            <div style={{
+              fontSize: '12px',
+              fontWeight: 'bold',
+              marginBottom: '8px',
+              color: '#1e2124'
+            }}>
+              🧪 Manual Input Tests
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '4px',
+              marginBottom: '8px'
+            }}>
               {['START', 'SELECT', 'A', 'B'].map(button => (
-                <button key={button} onClick={() => handleTestButton(button)}>{button}</button>
+                <button
+                  key={button}
+                  onClick={() => handleTestButton(button)}
+                  style={{
+                    padding: '6px 8px',
+                    fontSize: '10px',
+                    background: testButtonPressed === button 
+                      ? 'linear-gradient(145deg, #ef4444, #dc2626)' 
+                      : 'linear-gradient(145deg, #6b7280, #4b5563)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  {button}
+                </button>
               ))}
             </div>
-            <div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '4px'
+            }}>
               {['UP', 'DOWN', 'LEFT', 'RIGHT'].map(button => (
-                <button key={button} onClick={() => handleTestButton(button)}>{button}</button>
+                <button
+                  key={button}
+                  onClick={() => handleTestButton(button)}
+                  style={{
+                    padding: '6px 8px',
+                    fontSize: '10px',
+                    background: testButtonPressed === button 
+                      ? 'linear-gradient(145deg, #ef4444, #dc2626)' 
+                      : 'linear-gradient(145deg, #6b7280, #4b5563)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  {button}
+                </button>
               ))}
             </div>
-            <div>Test buttons to verify input works • Check browser console for debug info</div>
+            <div style={{
+              marginTop: '8px',
+              fontSize: '10px',
+              color: '#4b5563',
+              textAlign: 'center'
+            }}>
+              Test buttons to verify input works • Check browser console for debug info
+            </div>
           </div>
         )}
       </div>
