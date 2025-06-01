@@ -292,6 +292,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
     }, [ref]);
 
     const pressButton = async (button: string) => {
+      console.log('[EMULATOR LOG] pressButton called with button:', button);
       if (!wasmBoyInitialized.current) {
         // console.warn('⚠️ WasmBoy not initialized, cannot press button');
         return;
