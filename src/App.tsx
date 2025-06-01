@@ -90,17 +90,20 @@ function App() {
       return;
     }
     const newIsPlaying = !gameState.isPlaying;
-    addLog('info', `App: handlePlayPause -> isPlaying: ${newIsPlaying} - TEST LOG`);
+    console.log(`[MANUAL TEST] App: handlePlayPause -> newIsPlaying: ${newIsPlaying}, current AI Enabled: ${gameState.aiEnabled}`);
+    addLog('info', `App: handlePlayPause -> isPlaying: ${newIsPlaying}`);
     setGameState(prev => ({ ...prev, isPlaying: newIsPlaying }));
 
-    if (!newIsPlaying && aiControllerRef.current) { // If pausing
-        addLog('info', `App: handlePlayPause -> Manually stopping AI due to pause - TEST LOG`);
+    if (!newIsPlaying && aiControllerRef.current) {
+        console.log(`[MANUAL TEST] App: handlePlayPause -> Manually stopping AI due to pause. AI Enabled: ${gameState.aiEnabled}`);
+        addLog('info', `App: handlePlayPause -> Manually stopping AI due to pause`);
         aiControllerRef.current.stopPlaying();
     }
   };
 
   const handleStop = () => {
-    addLog('info', `App: handleStop called - TEST LOG`);
+    console.log(`[MANUAL TEST] App: handleStop called. AI Enabled: ${gameState.aiEnabled}`);
+    addLog('info', `App: handleStop called`);
     setGameState(prev => ({ ...prev, isPlaying: false }));
     if (aiControllerRef.current) {
       aiControllerRef.current.stopPlaying();
@@ -113,14 +116,16 @@ function App() {
 
   const handleAIToggle = () => {
     const newAIEnabled = !gameState.aiEnabled;
-    addLog('info', `App: handleAIToggle -> aiEnabled: ${newAIEnabled} - TEST LOG`);
+    console.log(`[MANUAL TEST] App: handleAIToggle -> newAIEnabled: ${newAIEnabled}`);
+    addLog('info', `App: handleAIToggle -> aiEnabled: ${newAIEnabled}`);
     setGameState(prev => ({
       ...prev,
       aiEnabled: newAIEnabled,
       aiStatus: newAIEnabled ? 'idle' : 'idle'
     }));
     if (!newAIEnabled && aiControllerRef.current) {
-        addLog('info', `App: handleAIToggle -> Manually stopping AI - TEST LOG`);
+        console.log(`[MANUAL TEST] App: handleAIToggle -> Manually stopping AI. Current isPlaying: ${gameState.isPlaying}`);
+        addLog('info', `App: handleAIToggle -> Manually stopping AI`);
         aiControllerRef.current.stopPlaying();
     }
   };
@@ -134,23 +139,28 @@ function App() {
   };
 
   const handleManualButtonPress = useCallback((button: string) => {
+    console.log(`[MANUAL TEST] Press: ${button}, AI Enabled: ${gameState.aiEnabled}`);
     if (gameState.aiEnabled) {
-      addLog('user', `User: Manual input BLOCKED (AI active) - ${button} - TEST LOG`);
+      addLog('user', `User: Manual input BLOCKED (AI active) - ${button}`);
       return;
     }
     if (emulatorRef.current) {
-      addLog('user', `User: Manual press -> ${button} - TEST LOG`);
+      console.log(`[MANUAL TEST] App: Forwarding press ${button} to emulatorRef`);
+      addLog('user', `User: Manual press -> ${button}`);
       emulatorRef.current.pressButton(button);
     }
   }, [gameState.aiEnabled, addLog]);
 
   const handleManualButtonRelease = useCallback((button: string) => {
+    console.log(`[MANUAL TEST] Release: ${button}, AI Enabled: ${gameState.aiEnabled}`);
     if (gameState.aiEnabled) {
-      // No log for blocked release to avoid spam
+      // No log for blocked release to avoid spam, but good for testing here
+      console.log(`[MANUAL TEST] App: Manual release ${button} BLOCKED (AI active)`);
       return;
     }
     if (emulatorRef.current) {
-      addLog('user', `User: Manual release -> ${button} - TEST LOG`);
+      console.log(`[MANUAL TEST] App: Forwarding release ${button} to emulatorRef`);
+      addLog('user', `User: Manual release -> ${button}`);
       emulatorRef.current.releaseButton(button);
     }
   }, [gameState.aiEnabled, addLog]);
@@ -172,17 +182,18 @@ function App() {
 
   useEffect(() => {
     addLog('info', 'GameBoy AI Player initialized');
-  }, [addLog]); // Added addLog dependency
+  }, [addLog]);
 
   useEffect(() => {
+    console.log(`[MANUAL TEST] App: AI Control useEffect triggered. AI Enabled: ${gameState.aiEnabled}, Is Playing: ${gameState.isPlaying}, Game: ${gameState.currentGame}`);
     if (gameState.aiEnabled && gameState.isPlaying && gameState.currentGame && aiControllerRef.current) {
-      addLog('info', 'App: useEffect -> STARTING AI (due to state change) - TEST LOG');
+      addLog('info', 'App: useEffect -> STARTING AI (due to state change)');
       aiControllerRef.current.startPlaying();
     } else if ((!gameState.aiEnabled || !gameState.isPlaying) && aiControllerRef.current) {
-      addLog('info', 'App: useEffect -> STOPPING AI (due to state change or game not playing) - TEST LOG');
+      addLog('info', 'App: useEffect -> STOPPING AI (due to state change or game not playing)');
       aiControllerRef.current.stopPlaying();
     }
-  }, [gameState.aiEnabled, gameState.isPlaying, gameState.currentGame]); // Removed addLog from here as it's not directly used for this effect's logic
+  }, [gameState.aiEnabled, gameState.isPlaying, gameState.currentGame]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -196,7 +207,7 @@ function App() {
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [gameState.currentGame, gameState.isPlaying, gameState.aiEnabled, handlePlayPause, handleStop, handleAIToggle]); // Added missing dependencies
+  }, [gameState.currentGame, gameState.isPlaying, gameState.aiEnabled, handlePlayPause, handleStop, handleAIToggle]);
 
   return (
     <div className="container">
