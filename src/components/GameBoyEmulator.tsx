@@ -369,6 +369,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
 
     useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
+        console.log('[EMULATOR KEYDOWN] handleKeyDown fired for key:', event.key);
         if (!wasmBoyInitialized.current) return;
         let button = '';
         switch (event.key) {
