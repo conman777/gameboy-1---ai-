@@ -185,6 +185,39 @@ body {
   grid-template-columns: 2fr 1fr 1fr;
 }
 
+/* Layout for single-viewport UI */
+.app-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.right-column {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 20px;
+}
+
+.scroll-section {
+  flex: 1;
+  overflow-y: auto;
+}
+
 @media (max-width: 768px) {
   .grid-2,
   .grid-3 {
