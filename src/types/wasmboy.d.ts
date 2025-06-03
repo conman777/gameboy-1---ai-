@@ -30,14 +30,14 @@ declare module 'wasmboy' {
   }
 
   export interface JoypadState {
-    up: boolean;
-    down: boolean;
-    left: boolean;
-    right: boolean;
-    a: boolean;
-    b: boolean;
-    start: boolean;
-    select: boolean;
+    UP: boolean;
+    DOWN: boolean;
+    LEFT: boolean;
+    RIGHT: boolean;
+    A: boolean;
+    B: boolean;
+    START: boolean;
+    SELECT: boolean;
   }
 
   export class WasmBoy {
