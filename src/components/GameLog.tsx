@@ -9,6 +9,34 @@ interface GameLogProps {
 const GameLog: React.FC<GameLogProps> = ({ logs, onClearLogs }) => {
   const logContainerRef = useRef<HTMLDivElement>(null);
 
+  // Convert logs to plain text for export or copy
+  const serializeLogs = () =>
+    logs
+      .map(
+        (l) =>
+          `${l.timestamp.toISOString()} [${l.type.toUpperCase()}] ${l.message}`
+      )
+      .join('\n');
+
+  const handleCopyLogs = async () => {
+    try {
+      await navigator.clipboard.writeText(serializeLogs());
+      alert('Logs copied to clipboard');
+    } catch (err) {
+      alert('Failed to copy logs');
+    }
+  };
+
+  const handleDownloadLogs = () => {
+    const blob = new Blob([serializeLogs()], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `gameboy-ai-logs-${new Date().toISOString()}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Auto-scroll to bottom when new logs are added
   useEffect(() => {
     if (logContainerRef.current) {
@@ -162,23 +190,42 @@ const GameLog: React.FC<GameLogProps> = ({ logs, onClearLogs }) => {
         </div>
       )}
 
-      {/* Clear Logs Button */}
-      {logs.length > 10 && (
-        <div style={{ marginTop: '8px', textAlign: 'center' }}>
+      {/* Export / Clear Log Controls */}
+      {logs.length > 0 && (
+        <div
+          style={{
+            marginTop: '8px',
+            display: 'flex',
+            gap: '8px',
+            justifyContent: 'center'
+          }}
+        >
           <button
             className="button"
-            style={{
-              fontSize: '11px',
-              padding: '4px 12px',
-              background: 'rgba(255,255,255,0.1)',
-              opacity: 0.7
-            }}
-            onClick={onClearLogs}
+            style={{ fontSize: '11px', padding: '4px 12px' }}
+            onClick={handleCopyLogs}
           >
-            Clear Old Logs
+            Copy Logs
           </button>
+          <button
+            className="button"
+            style={{ fontSize: '11px', padding: '4px 12px' }}
+            onClick={handleDownloadLogs}
+          >
+            Download Logs
+          </button>
+          {logs.length > 10 && (
+            <button
+              className="button"
+              style={{ fontSize: '11px', padding: '4px 12px' }}
+              onClick={onClearLogs}
+            >
+              Clear Old Logs
+            </button>
+          )}
         </div>
       )}
+
     </div>
   );
 };
