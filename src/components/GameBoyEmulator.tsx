@@ -21,14 +21,14 @@ export interface GameBoyEmulatorRef {
 
 // WasmBoy joypad state object
 interface JoypadState {
-  up: boolean;
-  right: boolean;
-  down: boolean;
-  left: boolean;
-  a: boolean;
-  b: boolean;
-  select: boolean;
-  start: boolean;
+  UP: boolean;
+  RIGHT: boolean;
+  DOWN: boolean;
+  LEFT: boolean;
+  A: boolean;
+  B: boolean;
+  SELECT: boolean;
+  START: boolean;
 }
 
 const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
@@ -37,26 +37,26 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
     const wasmBoyInitialized = useRef(false);
     const [testButtonPressed, setTestButtonPressed] = useState<string | null>(null);
     const [, setCurrentJoypadState] = useState<JoypadState>({ // currentJoypadState is unused
-      up: false,
-      right: false,
-      down: false,
-      left: false,
-      a: false,
-      b: false,
-      select: false,
-      start: false
+      UP: false,
+      RIGHT: false,
+      DOWN: false,
+      LEFT: false,
+      A: false,
+      B: false,
+      SELECT: false,
+      START: false
     });
 
     // Map button names to joypad state keys
     const buttonMap: { [key: string]: keyof JoypadState } = {
-      'UP': 'up',
-      'DOWN': 'down',
-      'LEFT': 'left',
-      'RIGHT': 'right',
-      'A': 'a',
-      'B': 'b',
-      'START': 'start',
-      'SELECT': 'select'
+      'UP': 'UP',
+      'DOWN': 'DOWN',
+      'LEFT': 'LEFT',
+      'RIGHT': 'RIGHT',
+      'A': 'A',
+      'B': 'B',
+      'START': 'START',
+      'SELECT': 'SELECT'
     };
 
     // Initialize WasmBoy
