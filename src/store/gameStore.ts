@@ -19,7 +19,6 @@ export interface GameState {
   aiEnabled: boolean;
   currentGame: string | null;
   gameData: Uint8Array | null;
-  screen: ImageData | null;
   aiStatus: 'idle' | 'thinking' | 'playing' | 'error';
   logs: LogEntry[];
   isMuted: boolean;
@@ -35,16 +34,14 @@ type GameStore = GameState & {
   addLog: (type: LogEntry['type'], message: string) => void;
   clearLogs: () => void;
   updateAIConfig: (config: AIConfig) => void;
-  updateScreen: (screen: ImageData) => void;
   setAIStatus: (status: GameState['aiStatus']) => void;
-};
+}; 
 
 const initialState: GameState = {
   isPlaying: false,
   aiEnabled: false,
   currentGame: null,
   gameData: null,
-  screen: null,
   aiStatus: 'idle',
   logs: [],
   isMuted: false,
@@ -140,10 +137,6 @@ export const useGameStore = create<GameStore>()(
             get().addLog('info', 'API key saved locally');
           }
         }
-      },
-      
-      updateScreen: (screen: ImageData) => {
-        set({ screen });
       },
       
       setAIStatus: (status: GameState['aiStatus']) => {

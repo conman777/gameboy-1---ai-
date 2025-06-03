@@ -315,7 +315,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
         }
       };
       (window as any).debugCanvas = () => { /* ... */ };
-      (window as any).testAllInputMethods = async (button = 'START') => { /* ... */ };
+      (window as any).testAllInputMethods = async (_button = 'START') => { /* ... */ };
       // console.log('✅ Debug functions available in development mode.');
       return () => {
         // console.log('Cleaning up debug functions');
@@ -456,17 +456,6 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
       console.error('Game load error:', error);
     };
 
-    const onCanvasShow = () => {
-      console.log('Canvas is showing');
-    };
-
-    const onCanvasHide = () => {
-      console.log('Canvas is hiding');
-    };
-
-    const onAudioWorks = () => {
-      console.log('Audio is working');
-    };
 
     return (
       <div style={{

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Cpu } from 'lucide-react';
-import { AIConfig, GameState } from '../App';
+import { AIConfig, GameState } from '../store/gameStore';
 
 interface ControlPanelProps {
   aiConfig: AIConfig;

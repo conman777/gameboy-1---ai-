@@ -6,7 +6,7 @@ import ControlPanel from './components/ControlPanel';
 import GameLog from './components/GameLog';
 import GameBoyControls from './components/GameBoyControls';
 import { APP_VERSION } from "./version";
-import { useGameStore, type GameState, type LogEntry, type AIConfig } from './store/gameStore';
+import { useGameStore, type GameState, type AIConfig } from './store/gameStore';
 
 function App() {
   const {
@@ -14,7 +14,6 @@ function App() {
     aiEnabled,
     currentGame,
     gameData,
-    screen,
     aiStatus,
     logs,
     isMuted,
@@ -27,19 +26,19 @@ function App() {
     addLog,
     clearLogs,
     updateAIConfig,
-    updateScreen,
     setAIStatus
   } = useGameStore();
 
   const emulatorRef = useRef<GameBoyEmulatorRef>(null);
   const aiControllerRef = useRef<AIControllerRef>(null);
+  const screenRef = useRef<ImageData | null>(null);
 
   const handleGameLoad = (gameData: Uint8Array, fileName: string) => {
     loadGame(gameData, fileName);
   };
 
   const handleScreenUpdate = (screen: ImageData) => {
-    updateScreen(screen);
+    screenRef.current = screen;
   };
 
   const handleManualButtonPress = (button: string) => {
@@ -162,14 +161,14 @@ function App() {
           />
         </div>
         <div>
-          <ControlPanel aiConfig={aiConfig} onConfigChange={handleAIConfigChange} gameState={{ isPlaying, aiEnabled, currentGame, gameData, screen, aiStatus, logs }} />
+          <ControlPanel aiConfig={aiConfig} onConfigChange={handleAIConfigChange} gameState={{ isPlaying, aiEnabled, currentGame, gameData, aiStatus, logs, isMuted, aiConfig }} />
           <GameLog logs={logs} onClearLogs={clearLogs} />
         </div>
       </div>
       <AIController
         ref={aiControllerRef}
         config={aiConfig}
-        gameState={{ isPlaying, aiEnabled, currentGame, gameData, screen, aiStatus, logs }}
+        gameState={{ isPlaying, aiEnabled, currentGame, gameData, aiStatus, logs, isMuted, aiConfig }}
         onStatusChange={handleAIStatusChange}
         onLog={addLog}
         emulatorRef={emulatorRef}
