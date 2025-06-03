@@ -106,6 +106,9 @@ function App() {
 
   return (
     <div className="container">
+      <div style={{ textAlign: 'center', color: 'white', fontSize: '1.2rem', marginBottom: '0.5rem' }}>
+        DEV is the best!
+      </div>
       <header style={{ textAlign: 'center', marginBottom: '2rem' }}>
         <h1 style={{ color: 'white', fontSize: '2.5rem', fontWeight: 'bold', textShadow: '0 4px 8px rgba(0,0,0,0.3)', margin: '0 0 0.5rem 0' }}>
           🎮 GameBoy AI Player
