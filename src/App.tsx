@@ -119,7 +119,7 @@ function App() {
           Watch AI play classic GameBoy games using OpenRouter
         </p>
       </header>
-      <div className="grid grid-2">
+      <div className="grid grid-3">
         <div>
           <GameBoyEmulator
             ref={emulatorRef}
@@ -129,6 +129,8 @@ function App() {
             onScreenUpdate={handleScreenUpdate}
             onGameLoad={handleGameLoad}
           />
+        </div>
+        <div>
           <div className="controls-panel">
             <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
               <button className="button" onClick={togglePlayPause} disabled={!currentGame}>
@@ -150,8 +152,8 @@ function App() {
               AI Status: {aiStatus}
               {aiEnabled && currentGame && (
                 <div style={{ fontSize: '10px', marginTop: '4px', opacity: 0.8 }}>
-                  {isPlaying ? 'Game is playing' : 'Game is paused'} • 
-                  {aiConfig.apiKey ? 'API key set' : 'No API key'} • 
+                  {isPlaying ? 'Game is playing' : 'Game is paused'} •
+                  {aiConfig.apiKey ? 'API key set' : 'No API key'} •
                   Model: {aiConfig.model.split('/').pop()}
                 </div>
               )}

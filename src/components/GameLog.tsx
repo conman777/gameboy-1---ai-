@@ -102,7 +102,7 @@ const GameLog: React.FC<GameLogProps> = ({ logs, onClearLogs }) => {
       <div 
         ref={logContainerRef}
         style={{
-          height: '300px',
+          height: '240px',
           overflowY: 'auto',
           background: 'rgba(0,0,0,0.3)',
           borderRadius: '8px',
