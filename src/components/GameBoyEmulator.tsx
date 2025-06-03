@@ -387,7 +387,8 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
         }
       },
       getScreenData,
-      isReady: () => wasmBoyInitialized.current && WasmBoy.isReady()
+      // Consider the emulator ready only once a ROM is loaded and started
+      isReady: () => wasmBoyInitialized.current && WasmBoy.isLoadedAndStarted()
     }));
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
