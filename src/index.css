@@ -49,8 +49,8 @@ body {
 
 .screen-content {
   background: #9bb563;
-  width: 480px;
-  height: 432px;
+  width: 640px;
+  height: 576px;
   border: 2px solid #1e2124;
   position: relative;
   margin: 0 auto;
