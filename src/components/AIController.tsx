@@ -1,6 +1,6 @@
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import axios from 'axios';
-import { AIConfig, GameState, LogEntry } from '../App';
+import { AIConfig, GameState, LogEntry } from '../store/gameStore';
 import { GameBoyEmulatorRef } from './GameBoyEmulator'; // Import GameBoyEmulatorRef
 
 interface AIControllerProps {
@@ -98,16 +98,7 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
       // Start the AI decision loop with async function
       const aiLoop = async () => {
         while (isPlayingRef.current && gameState.aiEnabled && gameState.isPlaying) {
-          const currentConditions = {
-            isPlayingRef: isPlayingRef.current,
-            aiEnabled: gameState.aiEnabled, 
-            gameIsPlaying: gameState.isPlaying,
-            hasApiKey: !!config.apiKey,
-            hasGame: !!gameState.currentGame,
-            emulatorReady: emulatorRef.current?.isReady?.() || false
-          };
-          
-          // console.log('AIController: AI loop tick', currentConditions);
+          // console.log('AIController: AI loop tick');
           
           if (!isPlayingRef.current) {
             // console.log('AIController: Stopping - AI loop not active');
