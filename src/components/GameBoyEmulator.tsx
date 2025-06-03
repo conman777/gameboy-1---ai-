@@ -35,6 +35,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
   ({ gameData, isPlaying, isMuted = false, onScreenUpdate, onGameLoad }, ref) => { // Removed onButtonPress
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const wasmBoyInitialized = useRef(false);
+    const [isInitialized, setIsInitialized] = useState(false);
     const [testButtonPressed, setTestButtonPressed] = useState<string | null>(null);
     const [, setCurrentJoypadState] = useState<JoypadState>({ // currentJoypadState is unused
       UP: false,
@@ -106,6 +107,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
             // console.log('  isPaused:', WasmBoy.isPaused());
             
             wasmBoyInitialized.current = true;
+            setIsInitialized(true);
           } catch (error) {
             // console.error('❌ Failed to initialize WasmBoy:', error);
             onGameLoadError(new Error(`Failed to initialize emulator: ${error instanceof Error ? error.message : String(error)}`));
@@ -119,24 +121,10 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
 
     // Handle game loading
     useEffect(() => {
-      const loadGame = async () => {
-        if (gameData && wasmBoyInitialized.current) {
-          try {
-            // console.log('=== GAME LOADING START ===');
-            // console.log('Loading ROM data, size:', gameData.length, 'bytes');
-            
-            await WasmBoy.loadROM(gameData);
-            // console.log('ROM loaded successfully');
-            
-          } catch (error) {
-            // console.error('Failed to load ROM:', error);
-            onGameLoadError(new Error(`Failed to load ROM: ${error instanceof Error ? error.message : String(error)}`));
-          }
-        }
-      };
-
-      loadGame();
-    }, [gameData]);
+      if (gameData && isInitialized) {
+        WasmBoy.loadROM(gameData).catch(onGameLoadError);
+      }
+    }, [gameData, isInitialized]);
 
     // Handle play/pause
     useEffect(() => {
