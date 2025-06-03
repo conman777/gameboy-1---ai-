@@ -66,6 +66,12 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
           try {
             // console.log('🎮 Initializing WasmBoy...');
             
+            // Set willReadFrequently on the canvas context early
+            const ctx = canvasRef.current.getContext('2d', { willReadFrequently: true });
+            if (!ctx) {
+              throw new Error('Failed to get canvas context');
+            }
+            
             // Configure WasmBoy with proper options
             const config = {
               headless: false,
@@ -160,6 +166,36 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
       handlePlayPause();
     }, [isPlaying, gameData]);
 
+    // Handle mute state changes dynamically
+    useEffect(() => {
+      if (wasmBoyInitialized.current) {
+        try {
+          // Try different WasmBoy audio control methods
+          if (typeof (WasmBoy as any).disableAudio === 'function' && typeof (WasmBoy as any).enableAudio === 'function') {
+            if (isMuted) {
+              (WasmBoy as any).disableAudio();
+              console.log('Audio muted using disableAudio()');
+            } else {
+              (WasmBoy as any).enableAudio();
+              console.log('Audio unmuted using enableAudio()');
+            }
+          } else if (typeof (WasmBoy as any).updateConfig === 'function') {
+            // Try updating config
+            (WasmBoy as any).updateConfig({ isAudioEnabled: !isMuted });
+            console.log(`Audio ${isMuted ? 'muted' : 'unmuted'} using updateConfig`);
+          } else if (typeof (WasmBoy as any).config === 'function') {
+            // Try reconfiguring
+            (WasmBoy as any).config({ isAudioEnabled: !isMuted });
+            console.log(`Audio ${isMuted ? 'muted' : 'unmuted'} using config`);
+          } else {
+            console.warn('No known audio control methods found on WasmBoy');
+          }
+        } catch (error) {
+          console.warn('Failed to change audio state:', error);
+        }
+      }
+    }, [isMuted]);
+
     // DISABLED: Update joypad state in WasmBoy whenever our state changes
     // This was causing race conditions with direct WasmBoy calls in pressButton/releaseButton
     // useEffect(() => {
@@ -231,7 +267,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
       
       try {
         const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (!ctx) return null;
         
         return ctx.getImageData(0, 0, canvas.width, canvas.height);

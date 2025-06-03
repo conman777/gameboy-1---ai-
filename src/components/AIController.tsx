@@ -189,11 +189,14 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
           onLog('error', 'Could not get screen data');
           return;
         }
-        // console.log('AIController: Got screen data', { width: screenData.width, height: screenData.height });
+        console.log('AIController: Got screen data', { width: screenData.width, height: screenData.height, dataLength: screenData.data.length });
 
-        // Vision capability is currently disabled as convertScreenDataToBase64 is commented out
-        const decision = await getAIDecisionWithVision();
-        // console.log('AIController: AI decision:', decision);
+        // Convert screen data to base64 for vision models
+        const base64Image = await convertScreenDataToBase64(screenData);
+        console.log('AIController: Converted to base64, length:', base64Image.length);
+        
+        const decision = await getAIDecisionWithVision(base64Image);
+        console.log('AIController: AI decision result:', decision);
         
         if (decision && emulatorRef.current) {
           onStatusChange('playing');
@@ -235,7 +238,7 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
       }
     };
 
-    /* const convertScreenDataToBase64 = async (screenData: ImageData): Promise<string> => {
+    const convertScreenDataToBase64 = async (screenData: ImageData): Promise<string> => {
       return new Promise((resolve) => {
         // Create a canvas to convert ImageData to base64
         const canvas = document.createElement('canvas');
@@ -251,7 +254,7 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
         const base64 = canvas.toDataURL('image/png').split(',')[1];
         resolve(base64);
       });
-    }; */
+    };
 
     const getAIDecisionWithVision = async (base64ImageArg?: string): Promise<string | null> => { // Renamed to avoid conflict
       try {
@@ -391,7 +394,11 @@ Respond with your reasoning and decision.`
           ];
         }
 
-        // console.log('AIController: Sending request to OpenRouter API...');
+        console.log('AIController: Sending request to OpenRouter API...');
+        console.log('AIController: Using model:', config.model);
+        console.log('AIController: API Key present:', !!config.apiKey);
+        console.log('AIController: Is vision model:', isVisionModel);
+        
         const response = await axios.post(
           'https://openrouter.ai/api/v1/chat/completions',
           {
@@ -411,7 +418,8 @@ Respond with your reasoning and decision.`
         );
 
         const fullResponse = response.data.choices[0]?.message?.content?.trim();
-        // console.log('AIController: Full AI response:', fullResponse);
+        console.log('AIController: Full AI response:', fullResponse);
+        console.log('AIController: Response data:', response.data);
         
         let decision = fullResponse; // Default to full response
         
@@ -470,7 +478,11 @@ Respond with your reasoning and decision.`
         }
         
       } catch (error) {
-        // console.error('OpenRouter API error:', error);
+        console.error('OpenRouter API error:', error);
+        if (axios.isAxiosError(error)) {
+          console.error('API Response:', error.response?.data);
+          console.error('API Status:', error.response?.status);
+        }
         onLog('error', `OpenRouter API error: ${error instanceof Error ? error.message : "Unknown error"}`);
         if (axios.isAxiosError(error)) {
           if (error.response?.status === 401) {
