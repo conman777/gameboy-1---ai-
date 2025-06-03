@@ -5,6 +5,7 @@ import AIController, { AIControllerRef } from './components/AIController';
 import ControlPanel from './components/ControlPanel';
 import GameLog from './components/GameLog';
 import GameBoyControls from './components/GameBoyControls';
+import { APP_VERSION } from "./version";
 import { useGameStore, type GameState, type LogEntry, type AIConfig } from './store/gameStore';
 
 function App() {
@@ -110,6 +111,8 @@ function App() {
         <h1 style={{ color: 'white', fontSize: '2.5rem', fontWeight: 'bold', textShadow: '0 4px 8px rgba(0,0,0,0.3)', margin: '0 0 0.5rem 0' }}>
           🎮 GameBoy AI Player
         </h1>
+          
+        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>v{APP_VERSION}</div>
         <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.1rem', margin: 0 }}>
           Watch AI play classic GameBoy games using OpenRouter
         </p>
