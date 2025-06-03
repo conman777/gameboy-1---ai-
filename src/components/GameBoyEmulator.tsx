@@ -452,7 +452,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
         borderRadius: '12px',
         boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
         border: '3px solid #7a9147',
-        maxWidth: '400px',
+        maxWidth: '480px',
         margin: '0 auto'
       }}>
         <div style={{
