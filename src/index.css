@@ -49,8 +49,8 @@ body {
 
 .screen-content {
   background: #9bb563;
-  width: 720px;
-  height: 648px;
+  width: 960px;
+  height: 864px;
   border: 2px solid #1e2124;
   position: relative;
   margin: 0 auto;
@@ -224,7 +224,7 @@ body {
   }
   
   .screen-content {
-    width: 480px;
-    height: 432px;
+    width: 640px;
+    height: 576px;
   }
 }
