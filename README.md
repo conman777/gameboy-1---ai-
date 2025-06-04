@@ -20,6 +20,7 @@ An intelligent web application that uses AI to play classic Game Boy games. Buil
 - **Intelligent screen analysis** that understands different game types
 - **Real-time decision making** with 2-second intervals
 - **Game-specific strategies** for Tetris, platformers, RPGs, and more
+- **Button success memory** shared with the AI before each decision
 
 ### 🎮 **Interactive Controls**
 - **Manual play mode** with keyboard controls
@@ -111,6 +112,7 @@ The AI analyzes Game Boy screens using advanced computer vision techniques:
 - **Context-Aware**: Makes decisions based on game type and current situation
 - **Strategic Thinking**: Plans moves ahead for puzzle games like Tetris
 - **Adaptive Learning**: Improves performance through trial and error
+- **Button Memory**: Remembers which buttons changed the screen successfully
 - **Error Recovery**: Handles unexpected situations gracefully
 
 ### Supported Game Types

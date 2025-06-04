@@ -49,6 +49,9 @@
    - Test pattern detection for repetitive decisions
    - Verify decision counter reset mechanism
    - Test avoidance logic for stuck patterns
+4. **Button Memory Store**
+   - Verify success/failure stats update after each press
+   - Confirm summary message is prepended to AI prompts
 
 ## Error Handling Tests
 1. **API Failure Recovery**

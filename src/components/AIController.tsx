@@ -3,6 +3,7 @@ import axios from 'axios';
 import { AIConfig, GameState, LogEntry } from '../store/gameStore';
 import { useButtonMemoryStore } from '../store/buttonMemoryStore';
 import { GameBoyEmulatorRef } from './GameBoyEmulator'; // Import GameBoyEmulatorRef
+import { useButtonMemoryStore, summarizeButtonStats } from '../store/buttonMemoryStore';
 
 interface AIControllerProps {
   config: AIConfig;
@@ -25,7 +26,8 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
     // const lastScreenDataRef = useRef<ImageData | null>(null);
     const lastDecisionRef = useRef<string | null>(null);
     const decisionCountRef = useRef<{ [key: string]: number }>({});
-    const recordButtonSuccess = useButtonMemoryStore(state => state.recordSuccess);
+  
+
 
     useImperativeHandle(ref, () => ({
       startPlaying: () => {
@@ -203,19 +205,24 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
             emulatorRef.current.releaseButton(decision);
             await new Promise(resolve => setTimeout(resolve, 300)); // Wait for screen to update
             const screenAfter = emulatorRef.current?.getScreenData();
-            
+
+            let success = false;
             if (screenBefore && screenAfter) {
               let pixelsDifferent = 0;
               for (let i = 0; i < Math.min(screenBefore.data.length, screenAfter.data.length); i++) {
                 if (screenBefore.data[i] !== screenAfter.data[i]) pixelsDifferent++;
               }
-              if (pixelsDifferent > 0) {
+              success = pixelsDifferent > 0;
+              if (success) {
                 onLog('ai', `✅ Button ${decision} caused screen change (${pixelsDifferent} pixels)`);
                 recordButtonSuccess(decision);
               } else {
                 onLog('ai', `⚠️ Button ${decision} did not change screen`);
               }
+            } else {
+              onLog('ai', `⚠️ Unable to evaluate ${decision} effect`);
             }
+            recordResult(decision, success);
             lastDecisionRef.current = decision;
             decisionCountRef.current[decision] = (decisionCountRef.current[decision] || 0) + 1;
           } catch (error) {
@@ -281,7 +288,7 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
                              config.model.includes('gemini') ||
                              config.model.includes('vision');
 
-        let messages;
+        let messages: any[];
         
         if (isVisionModel && base64ImageArg) { // Ensure base64ImageArg is present for vision
           // console.log('AIController: Using vision-based AI analysis');
@@ -355,6 +362,10 @@ Look at the game screen and determine what button will advance past the current 
               ]
             }
           ];
+          messages.unshift({
+            role: 'system',
+            content: `Previous button results: ${summarizeButtonStats()}`
+          });
         } else {
           // Fallback to text-based analysis for non-vision models (or if base64ImageArg is missing)
           // console.log('AIController: Using text-based analysis');
@@ -386,6 +397,10 @@ DECISION: [Button name]
 Respond with your reasoning and decision.`
             }
           ];
+          messages.unshift({
+            role: 'system',
+            content: `Previous button results: ${summarizeButtonStats()}`
+          });
         }
 
         console.log('AIController: Sending request to OpenRouter API...');
@@ -515,7 +530,7 @@ Respond with your reasoning and decision.`
       return analysis;
     };
 
-    // Cleanup on unmount
+export default AIController; 
     React.useEffect(() => {
       return () => {
         stopAILoop();
