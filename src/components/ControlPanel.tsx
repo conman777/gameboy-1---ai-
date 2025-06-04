@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Cpu } from 'lucide-react';
 import { AIConfig, GameState } from '../store/gameStore';
+import { useButtonMemoryStore } from '../store/buttonMemoryStore';
 
 interface ControlPanelProps {
   aiConfig: AIConfig;
@@ -27,6 +28,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   const [availableModels, setAvailableModels] = useState<OpenRouterModel[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
+  const { successCounts, clearMemory } = useButtonMemoryStore();
 
   // Fetch available models from OpenRouter
   useEffect(() => {
@@ -367,14 +369,44 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           <div>Game: {gameState.currentGame || 'None loaded'}</div>
           <div>Status: {gameState.isPlaying ? 'Playing' : 'Paused'}</div>
           <div>AI: {gameState.aiEnabled ? 'Enabled' : 'Disabled'}</div>
-          <div>AI Status: <span style={{ 
-            color: gameState.aiStatus === 'playing' ? '#22c55e' : 
-                   gameState.aiStatus === 'thinking' ? '#fbbf24' : 
+          <div>AI Status: <span style={{
+            color: gameState.aiStatus === 'playing' ? '#22c55e' :
+                   gameState.aiStatus === 'thinking' ? '#fbbf24' :
                    gameState.aiStatus === 'error' ? '#f87171' : '#9ca3af'
           }}>
             {gameState.aiStatus}
           </span></div>
         </div>
+      </div>
+
+      {/* Button Success Stats */}
+      <div style={{
+        marginTop: '20px',
+        padding: '12px',
+        background: 'rgba(0,0,0,0.2)',
+        borderRadius: '8px',
+        fontSize: '12px'
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '8px'
+        }}>
+          <span style={{ fontWeight: 'bold', color: 'white' }}>Button Success Stats</span>
+          <button className="button" style={{ fontSize: '10px', padding: '4px 8px' }} onClick={clearMemory}>
+            Clear Memory
+          </button>
+        </div>
+        {Object.keys(successCounts).length === 0 ? (
+          <div style={{ fontStyle: 'italic', color: 'rgba(255,255,255,0.6)' }}>No data yet</div>
+        ) : (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'rgba(255,255,255,0.8)' }}>
+            {Object.entries(successCounts).map(([btn, count]) => (
+              <li key={btn} style={{ marginBottom: '4px' }}>{btn}: {count}</li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Instructions */}
