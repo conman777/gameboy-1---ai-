@@ -1,6 +1,7 @@
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import axios from 'axios';
 import { AIConfig, GameState, LogEntry } from '../store/gameStore';
+import { useButtonMemoryStore } from '../store/buttonMemoryStore';
 import { GameBoyEmulatorRef } from './GameBoyEmulator'; // Import GameBoyEmulatorRef
 import { useButtonMemoryStore, summarizeButtonStats } from '../store/buttonMemoryStore';
 
@@ -25,7 +26,8 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
     // const lastScreenDataRef = useRef<ImageData | null>(null);
     const lastDecisionRef = useRef<string | null>(null);
     const decisionCountRef = useRef<{ [key: string]: number }>({});
-    const recordResult = useButtonMemoryStore(state => state.recordResult);
+  
+
 
     useImperativeHandle(ref, () => ({
       startPlaying: () => {
@@ -213,6 +215,7 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
               success = pixelsDifferent > 0;
               if (success) {
                 onLog('ai', `✅ Button ${decision} caused screen change (${pixelsDifferent} pixels)`);
+                recordButtonSuccess(decision);
               } else {
                 onLog('ai', `⚠️ Button ${decision} did not change screen`);
               }
