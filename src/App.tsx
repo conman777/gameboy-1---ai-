@@ -105,22 +105,8 @@ function App() {
   }, [currentGame, isPlaying, aiEnabled, togglePlayPause, stopGame, toggleAI]);
 
   return (
-    <div className="container">
-      <div style={{ textAlign: 'center', color: 'white', fontSize: '1.2rem', marginBottom: '0.5rem' }}>
-        DEV is the best!
-      </div>
-      <header style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ color: 'white', fontSize: '2.5rem', fontWeight: 'bold', textShadow: '0 4px 8px rgba(0,0,0,0.3)', margin: '0 0 0.5rem 0' }}>
-          🎮 GameBoy AI Player
-        </h1>
-          
-        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>v{APP_VERSION}</div>
-        <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.1rem', margin: 0 }}>
-          Watch AI play classic GameBoy games using OpenRouter
-        </p>
-      </header>
-      <div className="grid grid-3">
-        <div>
+    <div className="main-container">
+      <div className="left-column">
           <GameBoyEmulator
             ref={emulatorRef}
             gameData={gameData}
@@ -129,9 +115,19 @@ function App() {
             onScreenUpdate={handleScreenUpdate}
             onGameLoad={handleGameLoad}
           />
+          <GameBoyControls
+            onButtonPress={handleManualButtonPress}
+            onButtonRelease={handleManualButtonRelease}
+            disabled={aiEnabled}
+          />
         </div>
-        <div>
-          <div className="controls-panel">
+        <div className="right-column">
+          <header style={{ textAlign: 'center', padding: '10px 0' }}>
+            <h1 style={{ color: 'white', margin: 0 }}>🎮 GameBoy AI Player</h1>
+            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>v{APP_VERSION}</div>
+          </header>
+
+          <section className="controls-panel">
             <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
               <button className="button" onClick={togglePlayPause} disabled={!currentGame}>
                 {isPlaying ? <Pause size={16} /> : <Play size={16} />}
@@ -158,18 +154,20 @@ function App() {
                 </div>
               )}
             </div>
-          </div>
-          <GameBoyControls
-            onButtonPress={handleManualButtonPress}
-            onButtonRelease={handleManualButtonRelease}
-            disabled={aiEnabled}
-          />
+          </section>
+
+          <section>
+            <ControlPanel
+              aiConfig={aiConfig}
+              onConfigChange={handleAIConfigChange}
+              gameState={{ isPlaying, aiEnabled, currentGame, gameData, aiStatus, logs, isMuted, aiConfig }}
+            />
+          </section>
+
+          <section className="activity-log">
+            <GameLog logs={logs} onClearLogs={clearLogs} />
+          </section>
         </div>
-        <div>
-          <ControlPanel aiConfig={aiConfig} onConfigChange={handleAIConfigChange} gameState={{ isPlaying, aiEnabled, currentGame, gameData, aiStatus, logs, isMuted, aiConfig }} />
-          <GameLog logs={logs} onClearLogs={clearLogs} />
-        </div>
-      </div>
       <AIController
         ref={aiControllerRef}
         config={aiConfig}

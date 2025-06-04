@@ -2,20 +2,22 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
   padding: 0;
+  height: 100vh;
+  overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
 }
 
 #root {
-  min-height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -49,8 +51,8 @@ body {
 
 .screen-content {
   background: #9bb563;
-  width: 320px;
-  height: 288px;
+  width: 480px;
+  height: 432px;
   border: 2px solid #1e2124;
   position: relative;
   margin: 0 auto;
@@ -172,31 +174,61 @@ body {
   border-bottom: none;
 }
 
-.grid {
-  display: grid;
-  gap: 20px;
+
+/* Layout for single-viewport UI */
+.main-container {
+  display: flex;
+  height: 100%;
+  width: 100%;
 }
 
-.grid-2 {
-  grid-template-columns: 2fr 1fr;
+.left-column {
+  flex: 0 0 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  box-sizing: border-box;
 }
 
-.grid-3 {
-  grid-template-columns: 2fr 1fr 1fr;
+.right-column {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.right-column section {
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.activity-log {
+  flex: 1 1 auto;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 @media (max-width: 768px) {
-  .grid-2,
-  .grid-3 {
-    grid-template-columns: 1fr;
+  .left-column {
+    flex-basis: 420px;
   }
-  
-  .container {
-    padding: 10px;
+
+  #wasmboy-canvas {
+    width: 320px !important;
+    height: 288px !important;
   }
-  
-  .screen-content {
-    width: 280px;
-    height: 252px;
-  }
-} 
+}
+
+/* Ensure the GameBoy canvas scales correctly */
+#wasmboy-canvas {
+  width: 480px !important;
+  height: 432px !important;
+  image-rendering: pixelated !important;
+}
+
