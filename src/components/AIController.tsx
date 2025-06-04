@@ -530,7 +530,7 @@ Respond with your reasoning and decision.`
       return analysis;
     };
 
-    // Cleanup on unmount
+export default AIController; 
     React.useEffect(() => {
       return () => {
         stopAILoop();
