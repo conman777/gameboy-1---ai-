@@ -36,6 +36,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const wasmBoyInitialized = useRef(false);
     const [isInitialized, setIsInitialized] = useState(false);
+    const [isRomLoaded, setIsRomLoaded] = useState(false);
     const [, setCurrentJoypadState] = useState<JoypadState>({ // currentJoypadState is unused
       UP: false,
       RIGHT: false,
@@ -121,6 +122,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
     // Handle game loading
     useEffect(() => {
       if (gameData && isInitialized) {
+        setIsRomLoaded(false);
         console.log('🎮 Loading ROM...');
         WasmBoy.loadROM(gameData)
           .then(() => {
@@ -128,18 +130,21 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
             console.log('WasmBoy state after ROM load:');
             console.log('  isReady:', WasmBoy.isReady());
             console.log('  isPlaying:', WasmBoy.isPlaying());
+            setIsRomLoaded(true);
           })
           .catch((error) => {
             console.error('❌ Failed to load ROM:', error);
             onGameLoadError(error);
           });
+      } else {
+        setIsRomLoaded(false);
       }
     }, [gameData, isInitialized]);
 
     // Handle play/pause
     useEffect(() => {
       const handlePlayPause = async () => {
-        if (wasmBoyInitialized.current && gameData) {
+        if (wasmBoyInitialized.current && gameData && isRomLoaded) {
           try {
             console.log('=== PLAY/PAUSE HANDLING START ===');
             console.log('isPlaying:', isPlaying);
@@ -164,7 +169,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
       };
 
       handlePlayPause();
-    }, [isPlaying, gameData, isInitialized]);
+    }, [isPlaying, gameData, isInitialized, isRomLoaded]);
 
     // Handle mute state changes dynamically
     useEffect(() => {
