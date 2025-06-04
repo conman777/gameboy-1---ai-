@@ -19,53 +19,11 @@ const GameBoyControls: React.FC<GameBoyControlsProps> = ({ onButtonPress, onButt
     }
   };
 
-  const buttonStyle = {
-    backgroundColor: disabled ? '#666' : '#8b956d',
-    border: '2px solid #1e2124',
-    borderRadius: '4px',
-    color: '#1e2124',
-    fontWeight: 'bold',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    userSelect: 'none' as const,
-    transition: 'all 0.1s ease',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '12px',
-    opacity: disabled ? 0.5 : 1
-  };
-
-  const dpadButtonStyle = {
-    ...buttonStyle,
-    width: '40px',
-    height: '40px',
-    fontSize: '16px'
-  };
-
-  const actionButtonStyle = {
-    ...buttonStyle,
-    width: '50px',
-    height: '50px',
-    borderRadius: '50%',
-    fontSize: '14px',
-    fontWeight: 'bold'
-  };
-
-  const smallButtonStyle = {
-    ...buttonStyle,
-    width: '60px',
-    height: '20px',
-    borderRadius: '10px',
-    fontSize: '10px'
-  };
+  const buttonClass = 'gb-button';
 
   return (
     <div className="controls-panel">
-      <h3 style={{ 
-        color: 'white', 
-        margin: '0 0 16px 0',
-        textAlign: 'center'
-      }}>
+      <h3 className="panel-title center-text">
         🎮 Game Controls
       </h3>
       
@@ -88,7 +46,7 @@ const GameBoyControls: React.FC<GameBoyControlsProps> = ({ onButtonPress, onButt
           }}>
             <div></div>
             <button
-              style={dpadButtonStyle}
+              className={`${buttonClass} dpad-button`}
               onMouseDown={() => handleButtonPress('UP')}
               onMouseUp={() => handleButtonRelease('UP')}
               onMouseLeave={() => handleButtonRelease('UP')}
@@ -99,7 +57,7 @@ const GameBoyControls: React.FC<GameBoyControlsProps> = ({ onButtonPress, onButt
             <div></div>
             
             <button
-              style={dpadButtonStyle}
+              className={`${buttonClass} dpad-button`}
               onMouseDown={() => handleButtonPress('LEFT')}
               onMouseUp={() => handleButtonRelease('LEFT')}
               onMouseLeave={() => handleButtonRelease('LEFT')}
@@ -114,7 +72,7 @@ const GameBoyControls: React.FC<GameBoyControlsProps> = ({ onButtonPress, onButt
               borderRadius: '4px'
             }}></div>
             <button
-              style={dpadButtonStyle}
+              className={`${buttonClass} dpad-button`}
               onMouseDown={() => handleButtonPress('RIGHT')}
               onMouseUp={() => handleButtonRelease('RIGHT')}
               onMouseLeave={() => handleButtonRelease('RIGHT')}
@@ -125,7 +83,7 @@ const GameBoyControls: React.FC<GameBoyControlsProps> = ({ onButtonPress, onButt
             
             <div></div>
             <button
-              style={dpadButtonStyle}
+              className={`${buttonClass} dpad-button`}
               onMouseDown={() => handleButtonPress('DOWN')}
               onMouseUp={() => handleButtonRelease('DOWN')}
               onMouseLeave={() => handleButtonRelease('DOWN')}
@@ -148,7 +106,7 @@ const GameBoyControls: React.FC<GameBoyControlsProps> = ({ onButtonPress, onButt
             alignItems: 'center'
           }}>
             <button
-              style={actionButtonStyle}
+              className={`${buttonClass} action-button`}
               onMouseDown={() => handleButtonPress('B')}
               onMouseUp={() => handleButtonRelease('B')}
               onMouseLeave={() => handleButtonRelease('B')}
@@ -157,7 +115,7 @@ const GameBoyControls: React.FC<GameBoyControlsProps> = ({ onButtonPress, onButt
               B
             </button>
             <button
-              style={actionButtonStyle}
+              className={`${buttonClass} action-button`}
               onMouseDown={() => handleButtonPress('A')}
               onMouseUp={() => handleButtonRelease('A')}
               onMouseLeave={() => handleButtonRelease('A')}
@@ -177,7 +135,7 @@ const GameBoyControls: React.FC<GameBoyControlsProps> = ({ onButtonPress, onButt
         marginTop: '20px'
       }}>
         <button
-          style={smallButtonStyle}
+          className={`${buttonClass} small-button`}
           onMouseDown={() => handleButtonPress('SELECT')}
           onMouseUp={() => handleButtonRelease('SELECT')}
           onMouseLeave={() => handleButtonRelease('SELECT')}
@@ -186,7 +144,7 @@ const GameBoyControls: React.FC<GameBoyControlsProps> = ({ onButtonPress, onButt
           SELECT
         </button>
         <button
-          style={smallButtonStyle}
+          className={`${buttonClass} small-button`}
           onMouseDown={() => handleButtonPress('START')}
           onMouseUp={() => handleButtonRelease('START')}
           onMouseLeave={() => handleButtonRelease('START')}
