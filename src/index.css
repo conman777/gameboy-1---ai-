@@ -49,8 +49,8 @@ body {
 
 .screen-content {
   background: #9bb563;
-  width: 320px;
-  height: 288px;
+  width: 480px;
+  height: 432px;
   border: 2px solid #1e2124;
   position: relative;
   margin: 0 auto;
@@ -185,6 +185,34 @@ body {
   grid-template-columns: 2fr 1fr 1fr;
 }
 
+/* Layout for single-viewport UI */
+.app-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.right-column {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  gap: 20px;
+}
+
 @media (max-width: 768px) {
   .grid-2,
   .grid-3 {
@@ -196,7 +224,15 @@ body {
   }
   
   .screen-content {
-    width: 280px;
-    height: 252px;
+    width: 320px;
+    height: 288px;
   }
-} 
+}
+
+/* Ensure the GameBoy canvas scales correctly */
+#wasmboy-canvas {
+  width: 480px !important;
+  height: 432px !important;
+  image-rendering: pixelated !important;
+}
+

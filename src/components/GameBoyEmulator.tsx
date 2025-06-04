@@ -36,7 +36,6 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const wasmBoyInitialized = useRef(false);
     const [isInitialized, setIsInitialized] = useState(false);
-    const [testButtonPressed, setTestButtonPressed] = useState<string | null>(null);
     const [, setCurrentJoypadState] = useState<JoypadState>({ // currentJoypadState is unused
       UP: false,
       RIGHT: false,
@@ -95,7 +94,16 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
             await WasmBoy.config(config);
             
             // console.log('🖼️ Setting canvas for WasmBoy rendering...');
-            WasmBoy.setCanvas(canvasRef.current);
+            // Wait for WasmBoy to finish binding the canvas so our styles stick
+            await WasmBoy.setCanvas(canvasRef.current);
+            // Ensure the canvas is scaled up for better visibility
+            if (canvasRef.current) {
+              canvasRef.current.width = 480; // internal resolution
+              canvasRef.current.height = 432;
+              canvasRef.current.style.width = '480px';
+              canvasRef.current.style.height = '432px';
+              canvasRef.current.style.imageRendering = 'pixelated';
+            }
             
             // console.log('🎮 Disabling default joypad for custom input control...');
             await (WasmBoy as any).disableDefaultJoypad();
@@ -263,18 +271,6 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
         // console.error('Failed to get screen data:', error);
         return null;
       }
-    };
-
-    // Manual test button handler (can be removed or wrapped in dev check)
-    const handleTestButton = async (button: string) => {
-      setTestButtonPressed(button);
-      // console.log(`Manual test: Pressing ${button}`);
-      if (ref && 'current' in ref && ref.current) {
-        await ref.current.pressButton(button);
-      }
-      setTimeout(() => {
-        setTestButtonPressed(null);
-      }, 300);
     };
 
     // Debug function for testing WasmBoy directly (can be removed or wrapped in dev check)
@@ -446,15 +442,18 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
 
 
     return (
-      <div style={{
-        background: 'linear-gradient(145deg, #9bb563, #8faa5a)',
-        padding: '20px',
-        borderRadius: '12px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-        border: '3px solid #7a9147',
-        maxWidth: '480px',
-        margin: '0 auto'
-      }}>
+        <div
+          style={{
+            background: 'linear-gradient(145deg, #9bb563, #8faa5a)',
+            padding: '20px',
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+            border: '3px solid #7a9147',
+            width: '480px',
+            maxWidth: '100%',
+            margin: '0 auto'
+          }}
+        >
         <div style={{
           background: '#1e2124',
           padding: '16px',
@@ -463,12 +462,13 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
           border: '2px solid #36393f'
         }}>
           <canvas
+            id="wasmboy-canvas"
             ref={canvasRef}
             width={160}
             height={144}
             style={{
-              width: '100%',
-              height: 'auto',
+              width: '480px',
+              height: '432px',
               imageRendering: 'pixelated',
               background: '#0f380f',
               border: '2px solid #306230'
@@ -518,85 +518,6 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
           </div>
         )}
 
-        {gameData && wasmBoyInitialized.current && (
-          <div style={{
-            marginTop: '12px',
-            padding: '12px',
-            background: 'rgba(155, 181, 99, 0.1)',
-            borderRadius: '4px',
-            border: '1px solid rgba(155, 181, 99, 0.3)'
-          }}>
-            <div style={{
-              fontSize: '12px',
-              fontWeight: 'bold',
-              marginBottom: '8px',
-              color: '#1e2124'
-            }}>
-              🧪 Manual Input Tests
-            </div>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '4px',
-              marginBottom: '8px'
-            }}>
-              {['START', 'SELECT', 'A', 'B'].map(button => (
-                <button
-                  key={button}
-                  onClick={() => handleTestButton(button)}
-                  style={{
-                    padding: '6px 8px',
-                    fontSize: '10px',
-                    background: testButtonPressed === button 
-                      ? 'linear-gradient(145deg, #ef4444, #dc2626)' 
-                      : 'linear-gradient(145deg, #6b7280, #4b5563)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {button}
-                </button>
-              ))}
-            </div>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '4px'
-            }}>
-              {['UP', 'DOWN', 'LEFT', 'RIGHT'].map(button => (
-                <button
-                  key={button}
-                  onClick={() => handleTestButton(button)}
-                  style={{
-                    padding: '6px 8px',
-                    fontSize: '10px',
-                    background: testButtonPressed === button 
-                      ? 'linear-gradient(145deg, #ef4444, #dc2626)' 
-                      : 'linear-gradient(145deg, #6b7280, #4b5563)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {button}
-                </button>
-              ))}
-            </div>
-            <div style={{
-              marginTop: '8px',
-              fontSize: '10px',
-              color: '#4b5563',
-              textAlign: 'center'
-            }}>
-              Test buttons to verify input works • Check browser console for debug info
-            </div>
-          </div>
-        )}
       </div>
     );
   }
