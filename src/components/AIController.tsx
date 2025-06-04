@@ -1,7 +1,6 @@
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import axios from 'axios';
 import { AIConfig, GameState, LogEntry } from '../store/gameStore';
-import { useButtonMemoryStore } from '../store/buttonMemoryStore';
 import { GameBoyEmulatorRef } from './GameBoyEmulator'; // Import GameBoyEmulatorRef
 import { useButtonMemoryStore, summarizeButtonStats } from '../store/buttonMemoryStore';
 
@@ -26,6 +25,7 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
     // const lastScreenDataRef = useRef<ImageData | null>(null);
     const lastDecisionRef = useRef<string | null>(null);
     const decisionCountRef = useRef<{ [key: string]: number }>({});
+    const recordButtonSuccess = useButtonMemoryStore(state => state.recordSuccess);
   
 
 
@@ -222,7 +222,6 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
             } else {
               onLog('ai', `⚠️ Unable to evaluate ${decision} effect`);
             }
-            recordResult(decision, success);
             lastDecisionRef.current = decision;
             decisionCountRef.current[decision] = (decisionCountRef.current[decision] || 0) + 1;
           } catch (error) {
@@ -530,7 +529,6 @@ Respond with your reasoning and decision.`
       return analysis;
     };
 
-export default AIController; 
     React.useEffect(() => {
       return () => {
         stopAILoop();
