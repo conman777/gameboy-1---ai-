@@ -94,11 +94,12 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
             await WasmBoy.config(config);
             
             // console.log('🖼️ Setting canvas for WasmBoy rendering...');
-            WasmBoy.setCanvas(canvasRef.current);
+            // Wait for WasmBoy to finish binding the canvas so our styles stick
+            await WasmBoy.setCanvas(canvasRef.current);
             // Ensure the canvas is scaled up for better visibility
             if (canvasRef.current) {
-              canvasRef.current.style.width = '100%';
-              canvasRef.current.style.height = 'auto';
+              canvasRef.current.style.width = '480px';
+              canvasRef.current.style.height = '432px';
             }
             
             // console.log('🎮 Disabling default joypad for custom input control...');
@@ -445,7 +446,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
             borderRadius: '12px',
             boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
             border: '3px solid #7a9147',
-            width: '960px',
+            width: '480px',
             maxWidth: '100%',
             margin: '0 auto'
           }}
@@ -462,8 +463,8 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
             width={160}
             height={144}
             style={{
-              width: '100%',
-              height: 'auto',
+              width: '480px',
+              height: '432px',
               imageRendering: 'pixelated',
               background: '#0f380f',
               border: '2px solid #306230'
