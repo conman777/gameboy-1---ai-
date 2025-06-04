@@ -70,6 +70,47 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+.panel-title {
+  color: white;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.section {
+  margin-bottom: 16px;
+}
+
+.section-large {
+  margin-bottom: 20px;
+}
+
+.info-text {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.flex-row {
+  display: flex;
+}
+
+.gap-8 {
+  gap: 8px;
+}
+
+.center-text {
+  text-align: center;
+}
+
 .button {
   background: linear-gradient(145deg, #667eea, #764ba2);
   border: none;
@@ -192,30 +233,131 @@ body {
   flex-direction: column;
 }
 
-.main-grid {
+.layout-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 3fr 1fr;
   gap: 20px;
   overflow: hidden;
 }
 
-.left-column {
+.emulator-area {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 20px;
 }
 
-.right-column {
+.side-panel {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   gap: 20px;
 }
 
+.top-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tab-button {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tab-button.active {
+  background: linear-gradient(145deg, #667eea, #764ba2);
+}
+
+.tab-content {
+  flex: 1;
+}
+
+.gb-button {
+  background-color: #8b956d;
+  border: 2px solid #1e2124;
+  border-radius: 4px;
+  color: #1e2124;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.gb-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dpad-button {
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+}
+
+.action-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-size: 14px;
+}
+
+.small-button {
+  width: 60px;
+  height: 20px;
+  border-radius: 10px;
+  font-size: 10px;
+}
+
+.dpad-grid {
+  display: grid;
+  grid-template-columns: 40px 40px 40px;
+  grid-template-rows: 40px 40px 40px;
+  gap: 2px;
+}
+
+.log-stats {
+  margin-top: 12px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: space-between;
+}
+
+.log-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
 @media (max-width: 768px) {
   .grid-2,
   .grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .layout-grid {
     grid-template-columns: 1fr;
   }
   

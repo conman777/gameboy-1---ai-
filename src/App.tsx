@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Play, Pause, Square, Brain } from 'lucide-react';
 import GameBoyEmulator, { GameBoyEmulatorRef } from './components/GameBoyEmulator';
 import AIController, { AIControllerRef } from './components/AIController';
@@ -104,6 +104,8 @@ function App() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [currentGame, isPlaying, aiEnabled, togglePlayPause, stopGame, toggleAI]);
 
+  const [activeTab, setActiveTab] = useState<'panel' | 'log' | 'controls'>('panel');
+
   return (
     <div className="app-container container">
       <header style={{ textAlign: 'center', padding: '10px 0' }}>
@@ -111,8 +113,8 @@ function App() {
         <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>v{APP_VERSION}</div>
       </header>
 
-      <div className="main-grid">
-        <div className="left-column">
+      <div className="layout-grid">
+        <div className="emulator-area">
           <GameBoyEmulator
             ref={emulatorRef}
             gameData={gameData}
@@ -121,15 +123,10 @@ function App() {
             onScreenUpdate={handleScreenUpdate}
             onGameLoad={handleGameLoad}
           />
-          <GameBoyControls
-            onButtonPress={handleManualButtonPress}
-            onButtonRelease={handleManualButtonRelease}
-            disabled={aiEnabled}
-          />
         </div>
-        <div className="right-column">
+        <div className="side-panel">
           <div className="controls-panel">
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+            <div className="top-controls">
               <button className="button" onClick={togglePlayPause} disabled={!currentGame}>
                 {isPlaying ? <Pause size={16} /> : <Play size={16} />}
                 {isPlaying ? 'Pause' : 'Play'}
@@ -155,13 +152,29 @@ function App() {
                 </div>
               )}
             </div>
+            <div className="tabs">
+              <button className={`tab-button ${activeTab === 'panel' ? 'active' : ''}`} onClick={() => setActiveTab('panel')}>Config</button>
+              <button className={`tab-button ${activeTab === 'log' ? 'active' : ''}`} onClick={() => setActiveTab('log')}>Log</button>
+              <button className={`tab-button ${activeTab === 'controls' ? 'active' : ''}`} onClick={() => setActiveTab('controls')}>Controls</button>
+            </div>
+            <div className="tab-content">
+              {activeTab === 'panel' && (
+                <ControlPanel
+                  aiConfig={aiConfig}
+                  onConfigChange={handleAIConfigChange}
+                  gameState={{ isPlaying, aiEnabled, currentGame, gameData, aiStatus, logs, isMuted, aiConfig }}
+                />
+              )}
+              {activeTab === 'log' && <GameLog logs={logs} onClearLogs={clearLogs} />}
+              {activeTab === 'controls' && (
+                <GameBoyControls
+                  onButtonPress={handleManualButtonPress}
+                  onButtonRelease={handleManualButtonRelease}
+                  disabled={aiEnabled}
+                />
+              )}
+            </div>
           </div>
-          <ControlPanel
-            aiConfig={aiConfig}
-            onConfigChange={handleAIConfigChange}
-            gameState={{ isPlaying, aiEnabled, currentGame, gameData, aiStatus, logs, isMuted, aiConfig }}
-          />
-          <GameLog logs={logs} onClearLogs={clearLogs} />
         </div>
       </div>
 
