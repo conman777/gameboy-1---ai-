@@ -164,7 +164,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
       };
 
       handlePlayPause();
-    }, [isPlaying, gameData]);
+    }, [isPlaying, gameData, isInitialized]);
 
     // Handle mute state changes dynamically
     useEffect(() => {
