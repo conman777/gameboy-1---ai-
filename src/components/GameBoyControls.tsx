@@ -32,20 +32,21 @@ const GameBoyControls: React.FC<GameBoyControlsProps> = ({ onButtonPress, onButt
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: '12px',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
     opacity: disabled ? 0.5 : 1
   };
 
   const dpadButtonStyle = {
     ...buttonStyle,
-    width: '40px',
-    height: '40px',
+    width: '50px',
+    height: '50px',
     fontSize: '16px'
   };
 
   const actionButtonStyle = {
     ...buttonStyle,
-    width: '50px',
-    height: '50px',
+    width: '60px',
+    height: '60px',
     borderRadius: '50%',
     fontSize: '14px',
     fontWeight: 'bold'
@@ -53,19 +54,22 @@ const GameBoyControls: React.FC<GameBoyControlsProps> = ({ onButtonPress, onButt
 
   const smallButtonStyle = {
     ...buttonStyle,
-    width: '60px',
-    height: '20px',
+    width: '70px',
+    height: '24px',
     borderRadius: '10px',
     fontSize: '10px'
   };
 
   return (
-    <div className="controls-panel">
-      <h3 style={{ 
-        color: 'white', 
-        margin: '0 0 16px 0',
-        textAlign: 'center'
-      }}>
+    <div className="controls-panel game-controls">
+      <h3
+        className="panel-header"
+        style={{
+          color: 'white',
+          margin: '0 0 16px 0',
+          textAlign: 'center'
+        }}
+      >
         🎮 Game Controls
       </h3>
       

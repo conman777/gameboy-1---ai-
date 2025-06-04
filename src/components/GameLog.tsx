@@ -89,13 +89,16 @@ const GameLog: React.FC<GameLogProps> = ({ logs, onClearLogs }) => {
 
   return (
     <div className="controls-panel">
-      <h3 style={{ 
-        color: 'white', 
-        margin: '0 0 16px 0',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px'
-      }}>
+      <h3
+        className="panel-header"
+        style={{
+          color: 'white',
+          margin: '0 0 16px 0',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}
+      >
         📋 Activity Log
       </h3>
       
