@@ -4,8 +4,7 @@ import GameBoyEmulator, { GameBoyEmulatorRef } from './components/GameBoyEmulato
 import AIController, { AIControllerRef } from './components/AIController';
 import ControlPanel from './components/ControlPanel';
 import GameLog from './components/GameLog';
-import GameBoyControls from './components/GameBoyControls';
-import { APP_VERSION } from "./version";
+// import GameBoyControls from './components/GameBoyControls';
 import { useGameStore, type GameState, type AIConfig } from './store/gameStore';
 
 function App() {
