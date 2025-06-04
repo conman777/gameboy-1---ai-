@@ -95,6 +95,11 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
             
             // console.log('🖼️ Setting canvas for WasmBoy rendering...');
             WasmBoy.setCanvas(canvasRef.current);
+            // Ensure the canvas is scaled up for better visibility
+            if (canvasRef.current) {
+              canvasRef.current.style.width = '100%';
+              canvasRef.current.style.height = 'auto';
+            }
             
             // console.log('🎮 Disabling default joypad for custom input control...');
             await (WasmBoy as any).disableDefaultJoypad();
