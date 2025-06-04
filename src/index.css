@@ -49,8 +49,8 @@ body {
 
 .screen-content {
   background: #9bb563;
-  width: 640px;
-  height: 576px;
+  width: 720px;
+  height: 648px;
   border: 2px solid #1e2124;
   position: relative;
   margin: 0 auto;
@@ -209,13 +209,8 @@ body {
 .right-column {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  gap: 20px;
-}
-
-.scroll-section {
-  flex: 1;
   overflow-y: auto;
+  gap: 20px;
 }
 
 @media (max-width: 768px) {
@@ -229,7 +224,7 @@ body {
   }
   
   .screen-content {
-    width: 420px;
-    height: 378px;
+    width: 480px;
+    height: 432px;
   }
 }

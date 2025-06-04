@@ -156,16 +156,12 @@ function App() {
               )}
             </div>
           </div>
-          <div className="scroll-section">
-            <ControlPanel
-              aiConfig={aiConfig}
-              onConfigChange={handleAIConfigChange}
-              gameState={{ isPlaying, aiEnabled, currentGame, gameData, aiStatus, logs, isMuted, aiConfig }}
-            />
-          </div>
-          <div className="scroll-section">
-            <GameLog logs={logs} onClearLogs={clearLogs} />
-          </div>
+          <ControlPanel
+            aiConfig={aiConfig}
+            onConfigChange={handleAIConfigChange}
+            gameState={{ isPlaying, aiEnabled, currentGame, gameData, aiStatus, logs, isMuted, aiConfig }}
+          />
+          <GameLog logs={logs} onClearLogs={clearLogs} />
         </div>
       </div>
 
