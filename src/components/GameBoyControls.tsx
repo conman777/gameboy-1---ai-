@@ -60,7 +60,7 @@ const GameBoyControls: React.FC<GameBoyControlsProps> = ({ onButtonPress, onButt
   };
 
   return (
-    <div className="controls-panel">
+    <div className="controls-panel game-controls">
       <h3 style={{ 
         color: 'white', 
         margin: '0 0 16px 0',

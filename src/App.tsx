@@ -106,9 +106,9 @@ function App() {
 
   return (
     <div className="app-container container">
-      <header style={{ textAlign: 'center', padding: '10px 0' }}>
-        <h1 style={{ color: 'white', margin: 0 }}>🎮 GameBoy AI Player</h1>
-        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>v{APP_VERSION}</div>
+      <header className="app-header">
+        <h1 className="app-title">🎮 GameBoy AI Player</h1>
+        <div className="app-version">v{APP_VERSION}</div>
       </header>
 
       <div className="main-grid">
