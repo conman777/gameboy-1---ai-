@@ -14,6 +14,26 @@ body {
   min-height: 100vh;
 }
 
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  text-align: center;
+  padding: 10px 0;
+  background: rgba(30, 30, 40, 0.85);
+  backdrop-filter: blur(6px);
+}
+
+.app-title {
+  color: white;
+  margin: 0;
+}
+
+.app-version {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+}
+
 #root {
   min-height: 100vh;
   display: flex;
@@ -62,12 +82,19 @@ body {
 }
 
 .controls-panel {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 24px;
-  margin: 20px 0;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(30, 30, 40, 0.93);
+  border-radius: 14px;
+  padding: 1.2rem 1.4rem;
+  margin-bottom: 1.2rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
+}
+
+.game-controls {
+  margin-top: 2rem;
+  background: rgba(45, 45, 55, 0.92);
+}
+.game-controls button {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 .button {
@@ -203,26 +230,42 @@ body {
 .left-column {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 20px;
+}
+
+.emulator-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .right-column {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  gap: 20px;
+  gap: 1.2rem;
+  padding-right: 0.5rem;
 }
 
-@media (max-width: 768px) {
-  .grid-2,
-  .grid-3 {
+@media (max-width: 900px) {
+  .main-grid {
     grid-template-columns: 1fr;
+    height: auto;
   }
-  
+
+  .right-column,
+  .left-column {
+    width: 100%;
+    min-width: unset;
+  }
+
   .container {
     padding: 10px;
   }
-  
+
   .screen-content {
     width: 320px;
     height: 288px;
@@ -234,5 +277,7 @@ body {
   width: 480px !important;
   height: 432px !important;
   image-rendering: pixelated !important;
+  box-shadow: 0 6px 24px rgba(60, 60, 80, 0.24);
+  border-radius: 12px;
 }
 

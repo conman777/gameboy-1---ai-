@@ -443,6 +443,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
 
     return (
         <div
+          className="emulator-wrapper"
           style={{
             background: 'linear-gradient(145deg, #9bb563, #8faa5a)',
             padding: '20px',
