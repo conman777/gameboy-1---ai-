@@ -90,35 +90,19 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
 
   return (
     <div className="controls-panel">
-      <h3 style={{ 
-        color: 'white', 
-        margin: '0 0 16px 0',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px'
-      }}>
+      <h3 className="panel-title">
         <Settings size={20} />
         AI Configuration
       </h3>
 
       {/* Emulator Mode Selection */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ 
-          color: 'rgba(255,255,255,0.9)', 
-          fontSize: '14px',
-          fontWeight: 'bold',
-          display: 'block',
-          marginBottom: '8px'
-        }}>
+      <div className="section-large">
+        <label className="form-label">
           <Cpu size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
           Emulator Mode
         </label>
-        <div style={{ 
-          display: 'flex', 
-          gap: '8px',
-          marginBottom: '12px'
-        }}>
-          <button 
+        <div className="flex-row gap-8" style={{ marginBottom: '12px' }}>
+          <button
             className="button"
             style={{
               fontSize: '12px',
@@ -154,14 +138,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
       </div>
 
       {/* API Configuration */}
-      <div style={{ marginBottom: '16px' }}>
-        <label style={{ 
-          color: 'rgba(255,255,255,0.9)', 
-          fontSize: '14px',
-          fontWeight: 'bold',
-          display: 'block',
-          marginBottom: '8px'
-        }}>
+      <div className="section">
+        <label className="form-label">
           OpenRouter API Key
         </label>
         <input
@@ -169,24 +147,12 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           value={aiConfig.apiKey}
           onChange={(e) => handleConfigChange({ apiKey: e.target.value })}
           placeholder="sk-or-..."
-          style={{
-            width: '100%',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            border: '1px solid rgba(255,255,255,0.2)',
-            background: 'rgba(0,0,0,0.3)',
-            color: 'white',
-            fontSize: '14px'
-          }}
+          className="input-field"
         />
-        <div style={{ 
-          fontSize: '11px', 
-          color: 'rgba(255,255,255,0.6)',
-          marginTop: '4px'
-        }}>
-          Get your API key from <a 
-            href="https://openrouter.ai" 
-            target="_blank" 
+        <div className="info-text" style={{ marginTop: '4px' }}>
+          Get your API key from <a
+            href="https://openrouter.ai"
+            target="_blank"
             rel="noopener noreferrer"
             style={{ color: '#9bb563' }}
           >

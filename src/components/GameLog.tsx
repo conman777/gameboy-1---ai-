@@ -89,26 +89,14 @@ const GameLog: React.FC<GameLogProps> = ({ logs, onClearLogs }) => {
 
   return (
     <div className="controls-panel">
-      <h3 style={{ 
-        color: 'white', 
-        margin: '0 0 16px 0',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px'
-      }}>
+      <h3 className="panel-title">
         📋 Activity Log
       </h3>
       
-      <div 
+      <div
         ref={logContainerRef}
-        style={{
-          height: '240px',
-          overflowY: 'auto',
-          background: 'rgba(0,0,0,0.3)',
-          borderRadius: '8px',
-          padding: '12px',
-          border: '1px solid rgba(255,255,255,0.1)'
-        }}
+        className="log-container"
+        style={{ height: '240px' }}
       >
         {logs.length === 0 ? (
           <div style={{
@@ -171,35 +159,19 @@ const GameLog: React.FC<GameLogProps> = ({ logs, onClearLogs }) => {
 
       {/* Log Statistics */}
       {logs.length > 0 && (
-        <div style={{
-          marginTop: '12px',
-          padding: '8px',
-          background: 'rgba(0,0,0,0.2)',
-          borderRadius: '6px',
-          fontSize: '11px',
-          color: 'rgba(255,255,255,0.7)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div className="log-stats">
             <span>Total: {logs.length}</span>
             <span>
-              AI: {logs.filter(l => l.type === 'ai').length} | 
-              Game: {logs.filter(l => l.type === 'game').length} | 
+              AI: {logs.filter(l => l.type === 'ai').length} |
+              Game: {logs.filter(l => l.type === 'game').length} |
               Errors: {logs.filter(l => l.type === 'error').length}
             </span>
           </div>
-        </div>
       )}
 
       {/* Export / Clear Log Controls */}
       {logs.length > 0 && (
-        <div
-          style={{
-            marginTop: '8px',
-            display: 'flex',
-            gap: '8px',
-            justifyContent: 'center'
-          }}
-        >
+        <div className="log-actions">
           <button
             className="button"
             style={{ fontSize: '11px', padding: '4px 12px' }}

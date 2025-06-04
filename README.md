@@ -7,6 +7,7 @@ An intelligent web application that uses AI to play classic Game Boy games. Buil
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
 ![WebAssembly](https://img.shields.io/badge/WebAssembly-WasmBoy-purple?style=for-the-badge&logo=webassembly)
 
+![Updated Layout](https://placehold.co/600x400?text=Updated+Layout)
 ## ✨ Features
 
 ### 🎯 **Real Game Boy Emulation**
