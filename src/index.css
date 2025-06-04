@@ -228,3 +228,11 @@ body {
     height: 288px;
   }
 }
+
+/* Ensure the GameBoy canvas scales correctly */
+#wasmboy-canvas {
+  width: 480px !important;
+  height: 432px !important;
+  image-rendering: pixelated !important;
+}
+
