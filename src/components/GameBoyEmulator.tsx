@@ -64,7 +64,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
       const initWasmBoy = async () => {
         if (!wasmBoyInitialized.current && canvasRef.current) {
           try {
-            // console.log('🎮 Initializing WasmBoy...');
+            console.log('🎮 Initializing WasmBoy...');
             
             // Set willReadFrequently on the canvas context early
             const ctx = canvasRef.current.getContext('2d', { willReadFrequently: true });
@@ -90,29 +90,20 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
               saveStateCallback: false
             };
 
-            // console.log('🔧 Configuring WasmBoy with config:', config);
+            console.log('🔧 Configuring WasmBoy with config:', config);
             await WasmBoy.config(config);
             
-            // console.log('🖼️ Setting canvas for WasmBoy rendering...');
-            // Wait for WasmBoy to finish binding the canvas so our styles stick
-            await WasmBoy.setCanvas(canvasRef.current);
-            // Ensure the canvas is scaled up for better visibility
-            if (canvasRef.current) {
-              canvasRef.current.width = 480; // internal resolution
-              canvasRef.current.height = 432;
-              canvasRef.current.style.width = '480px';
-              canvasRef.current.style.height = '432px';
-              canvasRef.current.style.imageRendering = 'pixelated';
-            }
+            console.log('🖼️ Setting canvas for WasmBoy rendering...');
+            WasmBoy.setCanvas(canvasRef.current);
             
-            // console.log('🎮 Disabling default joypad for custom input control...');
+            console.log('🎮 Disabling default joypad for custom input control...');
             await (WasmBoy as any).disableDefaultJoypad();
             
-            // console.log('✅ WasmBoy initialized successfully');
-            // console.log('WasmBoy state after init:');
-            // console.log('  isReady:', WasmBoy.isReady());
-            // console.log('  isPlaying:', WasmBoy.isPlaying());
-            // console.log('  isPaused:', WasmBoy.isPaused());
+            console.log('✅ WasmBoy initialized successfully');
+            console.log('WasmBoy state after init:');
+            console.log('  isReady:', WasmBoy.isReady());
+            console.log('  isPlaying:', WasmBoy.isPlaying());
+            console.log('  isPaused:', WasmBoy.isPaused());
             
             wasmBoyInitialized.current = true;
             setIsInitialized(true);
@@ -130,7 +121,18 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
     // Handle game loading
     useEffect(() => {
       if (gameData && isInitialized) {
-        WasmBoy.loadROM(gameData).catch(onGameLoadError);
+        console.log('🎮 Loading ROM...');
+        WasmBoy.loadROM(gameData)
+          .then(() => {
+            console.log('✅ ROM loaded successfully');
+            console.log('WasmBoy state after ROM load:');
+            console.log('  isReady:', WasmBoy.isReady());
+            console.log('  isPlaying:', WasmBoy.isPlaying());
+          })
+          .catch((error) => {
+            console.error('❌ Failed to load ROM:', error);
+            onGameLoadError(error);
+          });
       }
     }, [gameData, isInitialized]);
 
@@ -139,22 +141,24 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
       const handlePlayPause = async () => {
         if (wasmBoyInitialized.current && gameData) {
           try {
-            // console.log('=== PLAY/PAUSE HANDLING START ===');
-            // console.log('isPlaying:', isPlaying);
+            console.log('=== PLAY/PAUSE HANDLING START ===');
+            console.log('isPlaying:', isPlaying);
             
             if (isPlaying) {
-              // console.log('Starting WasmBoy...');
+              console.log('Starting WasmBoy...');
               await WasmBoy.play();
-              // console.log('WasmBoy.play() completed');
+              console.log('WasmBoy.play() completed');
+              console.log('WasmBoy state after play:');
+              console.log('  isReady:', WasmBoy.isReady());
+              console.log('  isPlaying:', WasmBoy.isPlaying());
             } else {
-              // console.log('Pausing WasmBoy...');
+              console.log('Pausing WasmBoy...');
               await WasmBoy.pause();
-              // console.log('WasmBoy.pause() completed');
+              console.log('WasmBoy.pause() completed');
             }
             
           } catch (error) {
-            // console.error('Failed to handle play/pause:', error);
-            // Optionally, notify App.tsx of this error too
+            console.error('Failed to handle play/pause:', error);
           }
         }
       };
@@ -442,58 +446,55 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
 
 
     return (
-        <div
-          style={{
-            background: 'linear-gradient(145deg, #9bb563, #8faa5a)',
-            padding: '20px',
-            borderRadius: '12px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-            border: '3px solid #7a9147',
-            width: '480px',
-            maxWidth: '100%',
-            margin: '0 auto'
-          }}
-        >
-        <div style={{
-          background: '#1e2124',
-          padding: '16px',
-          borderRadius: '8px',
-          marginBottom: '16px',
-          border: '2px solid #36393f'
-        }}>
-          <canvas
-            id="wasmboy-canvas"
-            ref={canvasRef}
-            width={160}
-            height={144}
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          maxWidth: '1400px',
+          margin: '0 auto'
+        }}
+      >
+        {!gameData ? (
+          <div
             style={{
-              width: '480px',
-              height: '432px',
-              imageRendering: 'pixelated',
-              background: '#0f380f',
-              border: '2px solid #306230'
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '400px',
+              border: '2px dashed rgba(255, 255, 255, 0.3)',
+              borderRadius: '12px',
+              padding: '40px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              backdropFilter: 'blur(10px)'
             }}
-          />
-        </div>
-
-        {!gameData && (
-          <div style={{
-            textAlign: 'center',
-            marginBottom: '16px'
-          }}>
+          >
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎮</div>
+            <h2 style={{ color: 'white', margin: '0 0 16px 0', textAlign: 'center' }}>
+              Load a Game Boy ROM
+            </h2>
+            <p style={{ color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center', marginBottom: '24px' }}>
+              Drag and drop a .gb or .gbc file, or click below to browse
+            </p>
             <label style={{
               display: 'inline-block',
-              padding: '12px 24px',
-              background: 'linear-gradient(145deg, #4a5568, #2d3748)',
+              padding: '16px 32px',
+              background: 'linear-gradient(145deg, #3b82f6, #1d4ed8)',
               color: 'white',
-              borderRadius: '8px',
+              borderRadius: '12px',
               cursor: 'pointer',
-              border: '2px solid #1a202c',
-              fontSize: '14px',
-              fontWeight: 'bold'
+              border: 'none',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3)'
             }}>
-              <Upload size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-              Load ROM (.gb/.gbc)
+              <Upload size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+              Choose ROM File
               <input
                 type="file"
                 accept=".gb,.gbc"
@@ -502,22 +503,55 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
               />
             </label>
           </div>
-        )}
-
-        {gameData && (
-          <div style={{
-            marginTop: '12px',
-            padding: '8px',
-            background: 'rgba(30, 33, 36, 0.3)',
-            borderRadius: '4px',
-            fontSize: '10px',
-            color: '#1e2124',
-            textAlign: 'center'
-          }}>
-            <strong>Keyboard:</strong> Arrow Keys = D-Pad • Z = A • X = B • Enter = Start • Space = Select
+        ) : (
+          <div
+            style={{
+              background: 'rgba(0, 0, 0, 0.8)',
+              padding: '20px',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(20px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+              width: '100%',
+              maxWidth: '1200px'
+            }}
+          >
+            <canvas
+              ref={canvasRef}
+              width={160}
+              height={144}
+              style={{
+                width: '100%',
+                height: 'auto',
+                imageRendering: 'pixelated',
+                background: '#0f380f',
+                border: '2px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '8px',
+                display: 'block'
+              }}
+            />
+            
+            {/* Game Info Overlay */}
+            <div style={{
+              marginTop: '16px',
+              padding: '12px',
+              background: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '12px',
+              color: 'rgba(255, 255, 255, 0.8)'
+            }}>
+              <div>
+                <strong>Controls:</strong> Arrow Keys = D-Pad • Z = A • X = B • Enter = Start • Space = Select
+              </div>
+              <div>
+                Game Boy Emulator
+              </div>
+            </div>
           </div>
         )}
-
       </div>
     );
   }

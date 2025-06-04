@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Play, Pause, Square, Brain } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { Play, Pause, Square, Brain, Settings, BarChart3, Upload, Volume2, VolumeX } from 'lucide-react';
 import GameBoyEmulator, { GameBoyEmulatorRef } from './components/GameBoyEmulator';
 import AIController, { AIControllerRef } from './components/AIController';
 import ControlPanel from './components/ControlPanel';
@@ -75,6 +75,19 @@ function App() {
     setAIStatus(status);
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const arrayBuffer = e.target?.result as ArrayBuffer;
+        const gameDataBytes = new Uint8Array(arrayBuffer);
+        handleGameLoad(gameDataBytes, file.name);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  };
+
   useEffect(() => {
     addLog('info', 'GameBoy AI Player initialized');
   }, [addLog]);
@@ -104,78 +117,141 @@ function App() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [currentGame, isPlaying, aiEnabled, togglePlayPause, stopGame, toggleAI]);
 
-  const [activeTab, setActiveTab] = useState<'panel' | 'log' | 'controls'>('panel');
-
   return (
-    <div className="app-container container">
-      <header style={{ textAlign: 'center', padding: '10px 0' }}>
-        <h1 style={{ color: 'white', margin: 0 }}>🎮 GameBoy AI Player</h1>
-        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>v{APP_VERSION}</div>
+    <div className="modern-dashboard">
+      {/* Header */}
+      <header className="dashboard-header">
+        <div className="header-left">
+          <h1>🎮 GameBoy AI Player</h1>
+          {currentGame && <span className="current-game">{currentGame}</span>}
+        </div>
+        <div className="header-right">
+          <button className="header-btn" onClick={toggleMute} title={isMuted ? 'Unmute' : 'Mute'}>
+            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          </button>
+          <div className="ai-status-header">
+            <Brain size={16} />
+            <span className={`status-indicator status-${aiStatus}`}>
+              {aiStatus.toUpperCase()}
+            </span>
+          </div>
+          <button className="header-btn">
+            <Settings size={16} />
+          </button>
+        </div>
       </header>
 
-      <div className="layout-grid">
-        <div className="emulator-area">
-          <GameBoyEmulator
-            ref={emulatorRef}
-            gameData={gameData}
-            isPlaying={isPlaying}
-            isMuted={isMuted}
-            onScreenUpdate={handleScreenUpdate}
-            onGameLoad={handleGameLoad}
-          />
+      {/* Main Game Area */}
+      <main className="game-area">
+        <GameBoyEmulator
+          ref={emulatorRef}
+          gameData={gameData}
+          isPlaying={isPlaying}
+          isMuted={isMuted}
+          onScreenUpdate={handleScreenUpdate}
+          onGameLoad={handleGameLoad}
+        />
+
+        {/* Floating AI Panel */}
+        {aiEnabled && (
+          <div className="floating-ai-panel">
+            <div className="ai-panel-header">
+              <Brain size={16} />
+              <span>AI LIVE</span>
+              <div className="ai-activity">
+                <div className="activity-dot"></div>
+                <div className="activity-dot"></div>
+                <div className="activity-dot"></div>
+                <div className="activity-dot"></div>
+                <div className="activity-dot"></div>
+              </div>
+            </div>
+            <div className="ai-model">
+              {aiConfig.model.split('/').pop()}
+            </div>
+            {logs.slice(-3).map((log, index) => (
+              <div key={index} className="ai-log-entry">
+                {log.message.substring(0, 40)}...
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* Bottom Control Bar */}
+      <div className="control-bar">
+        <div className="control-section">
+          <button 
+            className={`control-btn ${isPlaying ? 'active' : ''}`} 
+            onClick={togglePlayPause} 
+            disabled={!currentGame}
+          >
+            {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+            {isPlaying ? 'PAUSE' : 'PLAY'}
+          </button>
+          <button className="control-btn" onClick={stopGame} disabled={!currentGame}>
+            <Square size={16} />
+            STOP
+          </button>
         </div>
-        <div className="side-panel">
-          <div className="controls-panel">
-            <div className="top-controls">
-              <button className="button" onClick={togglePlayPause} disabled={!currentGame}>
-                {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-                {isPlaying ? 'Pause' : 'Play'}
-              </button>
-              <button className="button" onClick={stopGame} disabled={!currentGame}>
-                <Square size={16} /> Stop
-              </button>
-              <button className="button" onClick={toggleAI} style={{ background: aiEnabled ? 'linear-gradient(145deg, #22c55e, #16a34a)' : 'linear-gradient(145deg, #667eea, #764ba2)' }}>
-                <Brain size={16} /> AI {aiEnabled ? 'ON' : 'OFF'}
-              </button>
-              <button className="button" onClick={toggleMute} style={{ background: isMuted ? 'linear-gradient(145deg, #ef4444, #dc2626)' : 'linear-gradient(145deg, #10b981, #059669)' }} title={isMuted ? 'Unmute audio' : 'Mute audio'}>
-                {isMuted ? '🔇' : '🔊'}
-              </button>
-            </div>
-            <div className={`status-indicator status-${aiStatus}`}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'currentColor' }} />
-              AI Status: {aiStatus}
-              {aiEnabled && currentGame && (
-                <div style={{ fontSize: '10px', marginTop: '4px', opacity: 0.8 }}>
-                  {isPlaying ? 'Game is playing' : 'Game is paused'} •
-                  {aiConfig.apiKey ? 'API key set' : 'No API key'} •
-                  Model: {aiConfig.model.split('/').pop()}
-                </div>
-              )}
-            </div>
-            <div className="tabs">
-              <button className={`tab-button ${activeTab === 'panel' ? 'active' : ''}`} onClick={() => setActiveTab('panel')}>Config</button>
-              <button className={`tab-button ${activeTab === 'log' ? 'active' : ''}`} onClick={() => setActiveTab('log')}>Log</button>
-              <button className={`tab-button ${activeTab === 'controls' ? 'active' : ''}`} onClick={() => setActiveTab('controls')}>Controls</button>
-            </div>
-            <div className="tab-content">
-              {activeTab === 'panel' && (
-                <ControlPanel
-                  aiConfig={aiConfig}
-                  onConfigChange={handleAIConfigChange}
-                  gameState={{ isPlaying, aiEnabled, currentGame, gameData, aiStatus, logs, isMuted, aiConfig }}
-                />
-              )}
-              {activeTab === 'log' && <GameLog logs={logs} onClearLogs={clearLogs} />}
-              {activeTab === 'controls' && (
-                <GameBoyControls
-                  onButtonPress={handleManualButtonPress}
-                  onButtonRelease={handleManualButtonRelease}
-                  disabled={aiEnabled}
-                />
-              )}
-            </div>
+
+        <div className="control-section">
+          <button 
+            className={`control-btn ai-toggle ${aiEnabled ? 'ai-active' : ''}`} 
+            onClick={toggleAI}
+          >
+            <Brain size={16} />
+            AI: {aiEnabled ? 'ON' : 'OFF'}
+          </button>
+        </div>
+
+        <div className="control-section">
+          <label className="control-btn file-upload">
+            <Upload size={16} />
+            LOAD ROM
+            <input
+              type="file"
+              accept=".gb,.gbc"
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
+
+        <div className="control-section game-controls">
+          <div className="dpad">
+            <button className="dpad-btn up" onMouseDown={() => handleManualButtonPress('UP')} onMouseUp={() => handleManualButtonRelease('UP')}>⬆</button>
+            <button className="dpad-btn left" onMouseDown={() => handleManualButtonPress('LEFT')} onMouseUp={() => handleManualButtonRelease('LEFT')}>⬅</button>
+            <button className="dpad-btn right" onMouseDown={() => handleManualButtonPress('RIGHT')} onMouseUp={() => handleManualButtonRelease('RIGHT')}>➡</button>
+            <button className="dpad-btn down" onMouseDown={() => handleManualButtonPress('DOWN')} onMouseUp={() => handleManualButtonRelease('DOWN')}>⬇</button>
+          </div>
+          <div className="action-buttons">
+            <button className="action-btn" onMouseDown={() => handleManualButtonPress('B')} onMouseUp={() => handleManualButtonRelease('B')}>B</button>
+            <button className="action-btn" onMouseDown={() => handleManualButtonPress('A')} onMouseUp={() => handleManualButtonRelease('A')}>A</button>
+          </div>
+          <div className="meta-buttons">
+            <button className="meta-btn" onMouseDown={() => handleManualButtonPress('SELECT')} onMouseUp={() => handleManualButtonRelease('SELECT')}>SELECT</button>
+            <button className="meta-btn" onMouseDown={() => handleManualButtonPress('START')} onMouseUp={() => handleManualButtonRelease('START')}>START</button>
           </div>
         </div>
+
+        <div className="control-section stats">
+          <BarChart3 size={16} />
+          <div className="stats-info">
+            <div>FPS: 60</div>
+            <div>AI Actions: {logs.filter(l => l.type === 'ai').length}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Hidden Panels */}
+      <div className="hidden-panels">
+        <ControlPanel
+          aiConfig={aiConfig}
+          onConfigChange={handleAIConfigChange}
+          gameState={{ isPlaying, aiEnabled, currentGame, gameData, aiStatus, logs, isMuted, aiConfig }}
+        />
+        <GameLog logs={logs} onClearLogs={clearLogs} />
       </div>
 
       <AIController
