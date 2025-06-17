@@ -31,22 +31,30 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
   const { successCounts, clearMemory } = useButtonMemoryStore();
+  const [refreshCount, setRefreshCount] = useState(0);
 
   // Default model - good balance of performance and cost
   const DEFAULT_MODEL = 'anthropic/claude-3.5-sonnet';
 
-  // Fetch available models from OpenRouter
+  // Fetch available models from OpenRouter (re-run whenever API key changes)
   useEffect(() => {
     const fetchModels = async () => {
       setIsLoadingModels(true);
       setModelError(null);
-      
+
       try {
-        const response = await fetch('https://openrouter.ai/api/v1/models');
+        const headers: Record<string, string> = {};
+        if (aiConfig.apiKey) {
+          headers['Authorization'] = `Bearer ${aiConfig.apiKey}`;
+        }
+
+        const response = await fetch('https://openrouter.ai/api/v1/models', {
+          headers
+        });
         if (!response.ok) {
           throw new Error(`Failed to fetch models: ${response.status}`);
         }
-        
+
         const data = await response.json();
         const models = data.data || [];
         
@@ -89,6 +97,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         }
         
         console.log(`Loaded ${sortedModels.length} models from OpenRouter`);
+        console.log('Sample models:', sortedModels.slice(0, 10).map((m: OpenRouterModel) => m.id));
       } catch (error) {
         console.error('Failed to fetch OpenRouter models:', error);
         setModelError(error instanceof Error ? error.message : 'Failed to load models');
@@ -118,7 +127,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     };
 
     fetchModels();
-  }, []);
+  }, [aiConfig.apiKey, refreshCount]);
 
   // Filter models based on search query
   useEffect(() => {
@@ -151,86 +160,80 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   return (
     <div className="controls-panel">
       <h3 className="panel-title">
-        <Settings size={20} />
-        AI Configuration
+        <Cpu size={20} />
+        AI Control
       </h3>
 
-      {/* Emulator Mode Selection */}
-      <div className="section-large">
-        <label className="form-label">
-          <Cpu size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-          Emulator Mode
-        </label>
-        <div className="flex-row gap-8" style={{ marginBottom: '12px' }}>
-          <button
-            className="button"
-            style={{
-              fontSize: '12px',
-              padding: '6px 12px',
-              background: 'linear-gradient(145deg, #22c55e, #16a34a)',
-              opacity: 1
-            }}
-            title="Authentic Game Boy emulation using WasmBoy WebAssembly"
-          >
-            Authentic Mode
-          </button>
-          <button 
-            className="button"
-            style={{
-              fontSize: '12px',
-              padding: '6px 12px',
-              background: 'rgba(255,255,255,0.1)',
-              opacity: 0.6
-            }}
-            disabled
-            title="Enhanced visual mode (Previously available)"
-          >
-            Enhanced Mode
-          </button>
-        </div>
+      {/* API Key Status */}
+      {!aiConfig.apiKey ? (
         <div style={{ 
-          fontSize: '11px', 
-          color: 'rgba(255,255,255,0.6)',
-          fontStyle: 'italic'
+          fontSize: '12px', 
+          color: '#ff6b6b', 
+          marginBottom: '16px',
+          padding: '8px 12px',
+          background: 'rgba(255, 107, 107, 0.1)',
+          borderRadius: '6px',
+          border: '1px solid rgba(255, 107, 107, 0.3)'
         }}>
-          Authentic Mode: Real Game Boy emulation via WasmBoy WebAssembly
+          ⚠️ Please set your OpenRouter API key in Settings to access AI models
         </div>
-      </div>
-
-      {/* API Configuration */}
-      <div className="section">
-        <label className="form-label">
-          OpenRouter API Key
-        </label>
-        <input
-          type="password"
-          value={aiConfig.apiKey}
-          onChange={(e) => handleConfigChange({ apiKey: e.target.value })}
-          placeholder="sk-or-..."
-          className="input-field"
-        />
-        <div className="info-text" style={{ marginTop: '4px' }}>
-          Get your API key from <a
-            href="https://openrouter.ai"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: '#9bb563' }}
-          >
-            openrouter.ai
-          </a>
+      ) : (
+        <div style={{ 
+          fontSize: '12px', 
+          color: '#22c55e', 
+          marginBottom: '16px',
+          padding: '8px 12px',
+          background: 'rgba(34, 197, 94, 0.1)',
+          borderRadius: '6px',
+          border: '1px solid rgba(34, 197, 94, 0.3)'
+        }}>
+          ✅ API key configured - full model catalog available
         </div>
-      </div>
+      )}
 
       {/* Model Selection with Search */}
       <div style={{ marginBottom: '16px' }}>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: 'white' }}>
-          AI Model {isLoadingModels && '(Loading...)'}
+          AI Model Selection {isLoadingModels && '(Loading all models...)'}
           {!isLoadingModels && (
             <span style={{ fontSize: '12px', fontWeight: 'normal', opacity: 0.7 }}>
-              ({filteredModels.length} of {availableModels.length} models)
+              (Showing {filteredModels.length} of {availableModels.length} total models)
             </span>
           )}
         </label>
+        
+        {!isLoadingModels && availableModels.length > 0 && (
+          <div style={{ 
+            fontSize: '11px', 
+            color: '#22c55e',
+            marginBottom: '8px',
+            padding: '4px 8px',
+            background: 'rgba(34, 197, 94, 0.1)',
+            borderRadius: '4px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <span>✅ Loaded {availableModels.length} models from OpenRouter</span>
+            <button
+              onClick={() => {
+                console.log('All available models:', availableModels);
+                console.log('Current filtered models:', filteredModels);
+              }}
+              style={{
+                background: 'none',
+                border: '1px solid rgba(34, 197, 94, 0.5)',
+                color: '#22c55e',
+                padding: '2px 6px',
+                borderRadius: '3px',
+                fontSize: '10px',
+                cursor: 'pointer'
+              }}
+            >
+              Debug Models
+            </button>
+          </div>
+        )}
         
         {modelError && (
           <div style={{ 
@@ -246,30 +249,51 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         )}
 
         {/* Search Input */}
-        <div style={{ position: 'relative', marginBottom: '8px' }}>
-          <Search 
-            size={16} 
-            style={{ 
-              position: 'absolute', 
-              left: '8px', 
-              top: '50%', 
-              transform: 'translateY(-50%)', 
-              color: 'rgba(255,255,255,0.5)' 
-            }} 
-          />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search models (e.g., claude, gpt, gemini)..."
-            className="input-field"
-            style={{
-              paddingLeft: '32px',
-              fontSize: '13px',
-              background: 'rgba(0,0,0,0.3)',
-              marginBottom: '0'
+        <div style={{ position: 'relative', marginBottom: '8px', display: 'flex', gap: '8px' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <Search 
+              size={16} 
+              style={{ 
+                position: 'absolute', 
+                left: '8px', 
+                top: '50%', 
+                transform: 'translateY(-50%)', 
+                color: 'rgba(255,255,255,0.5)' 
+              }} 
+            />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search all models: claude, gpt, gemini, llama, mistral, cohere..."
+              className="input-field"
+              style={{
+                paddingLeft: '32px',
+                fontSize: '13px',
+                background: 'rgba(0,0,0,0.3)',
+                marginBottom: '0',
+                border: '2px solid rgba(34, 197, 94, 0.3)',
+                width: '100%'
+              }}
+            />
+          </div>
+          <button
+            onClick={() => {
+              setRefreshCount(c => c + 1);
             }}
-          />
+            title="Refresh model list"
+            style={{
+              background: 'linear-gradient(145deg, #667eea, #764ba2)',
+              border: 'none',
+              borderRadius: '6px',
+              color: 'white',
+              fontSize: '12px',
+              padding: '6px 10px',
+              cursor: 'pointer'
+            }}
+          >
+            🔄 Refresh
+          </button>
         </div>
 
         {/* Model Select Dropdown */}

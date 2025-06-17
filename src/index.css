@@ -1191,3 +1191,265 @@ body {
   }
 }
 
+/* New Tabbed App Layout */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.app-header {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 16px 24px;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.app-title {
+  color: white;
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.tab-nav {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 24px;
+  gap: 2px;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  margin-top: 4px;
+  position: relative;
+}
+
+.tab-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.tab-button.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border-bottom: 3px solid #667eea;
+}
+
+.tab-shortcut {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-left: 4px;
+}
+
+.tab-content {
+  flex: 1;
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.tab-panel {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Combined Game & AI Control Layout */
+.game-layout {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 24px;
+  align-items: start;
+}
+
+.game-section {
+  display: flex;
+  justify-content: center;
+}
+
+.control-section {
+  /* Control panel styling handled by existing .controls-panel class */
+}
+
+.quick-actions {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.action-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.action-button {
+  background: linear-gradient(145deg, #667eea, #764ba2);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.action-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.action-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.action-button.ai-active {
+  background: linear-gradient(145deg, #22c55e, #16a34a);
+}
+
+.action-button.ai-inactive {
+  background: linear-gradient(145deg, #ef4444, #dc2626);
+}
+
+.memory-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.memory-label {
+  font-weight: 600;
+}
+
+.memory-item {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.memory-clear {
+  background: rgba(255, 107, 107, 0.2);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 4px;
+  color: #ff6b6b;
+  padding: 4px 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.memory-clear:hover {
+  background: rgba(255, 107, 107, 0.3);
+}
+
+.controls-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  font-family: monospace;
+}
+
+/* Mobile responsive for new tabbed layout */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 12px 16px;
+  }
+  
+  .app-title {
+    font-size: 20px;
+  }
+  
+  .tab-nav {
+    padding: 0 16px;
+    overflow-x: auto;
+  }
+  
+  .tab-button {
+    padding: 12px 16px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  
+  .tab-shortcut {
+    display: none;
+  }
+  
+  .tab-content {
+    padding: 16px;
+  }
+  
+  .quick-actions {
+    padding: 12px 16px;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .action-group {
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .memory-display {
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .controls-hint {
+    font-size: 10px;
+  }
+  
+  /* Mobile responsive for combined layout */
+  .game-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .game-section {
+    order: 1;
+  }
+  
+  .control-section {
+    order: 2;
+  }
+}
+
