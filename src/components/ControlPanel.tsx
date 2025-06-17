@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Cpu, Search } from 'lucide-react';
+import { Cpu, Search } from 'lucide-react';
 import { AIConfig, GameState } from '../store/gameStore';
 import { useButtonMemoryStore } from '../store/buttonMemoryStore';
 
@@ -471,6 +471,103 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             fontSize: '14px'
           }}
         />
+      </div>
+
+      {/* AI Thoughts Display */}
+      <div style={{
+        marginBottom: '16px',
+        padding: '12px',
+        background: 'rgba(34, 197, 94, 0.1)',
+        borderRadius: '8px',
+        border: '1px solid rgba(34, 197, 94, 0.3)',
+        minHeight: '80px',
+        maxHeight: '120px',
+        overflow: 'auto'
+      }}>
+        <div style={{ 
+          fontWeight: 'bold', 
+          marginBottom: '8px', 
+          color: '#22c55e',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          fontSize: '14px'
+        }}>
+          🧠 AI Thoughts
+        </div>
+                 {(() => {
+           // Extract recent AI analysis from logs
+           const recentLogs = gameState.logs.slice(-10); // Look at last 10 logs
+           
+           // Get the latest vision analysis
+           const latestVision = recentLogs
+             .filter(log => log.type === 'ai' && log.message.includes('👁️ AI sees:'))
+             .slice(-1)[0]?.message.replace('👁️ AI sees: ', '');
+           
+           // Get the latest thoughts  
+           const latestThought = recentLogs
+             .filter(log => log.type === 'ai' && log.message.includes('🧠 AI thinks:'))
+             .slice(-1)[0]?.message.replace('🧠 AI thinks: ', '');
+           
+           // Get the latest action
+           const latestAction = recentLogs
+             .filter(log => log.type === 'ai' && log.message.includes('🎮 Pressing'))
+             .slice(-1)[0]?.message;
+           
+           if (!latestVision && !latestThought && !latestAction) {
+             return (
+               <div style={{ 
+                 fontStyle: 'italic', 
+                 color: 'rgba(255,255,255,0.6)',
+                 fontSize: '12px'
+               }}>
+                 AI thoughts will appear here when the AI is playing...
+               </div>
+             );
+           }
+           
+           return (
+             <div style={{ fontSize: '11px', lineHeight: '1.4' }}>
+               {latestVision && (
+                 <div style={{ 
+                   marginBottom: '8px',
+                   color: '#60a5fa',
+                   padding: '6px 8px',
+                   background: 'rgba(96, 165, 250, 0.1)',
+                   borderRadius: '4px',
+                   borderLeft: '3px solid #60a5fa'
+                 }}>
+                   <strong>👁️ Sees:</strong> {latestVision}
+                 </div>
+               )}
+               
+               {latestThought && (
+                 <div style={{ 
+                   marginBottom: '8px',
+                   color: '#22c55e',
+                   padding: '6px 8px',
+                   background: 'rgba(34, 197, 94, 0.1)',
+                   borderRadius: '4px',
+                   borderLeft: '3px solid #22c55e'
+                 }}>
+                   <strong>🧠 Thinks:</strong> {latestThought}
+                 </div>
+               )}
+               
+               {latestAction && (
+                 <div style={{ 
+                   color: '#fbbf24',
+                   padding: '6px 8px',
+                   background: 'rgba(251, 191, 36, 0.1)',
+                   borderRadius: '4px',
+                   borderLeft: '3px solid #fbbf24'
+                 }}>
+                   <strong>{latestAction}</strong>
+                 </div>
+               )}
+             </div>
+           );
+         })()}
       </div>
 
       {/* Game Status */}

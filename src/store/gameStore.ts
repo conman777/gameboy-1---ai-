@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { getRomHash } from '../utils/getRomHash';
 
 export interface LogEntry {
   timestamp: Date;
@@ -19,6 +20,7 @@ export interface GameState {
   aiEnabled: boolean;
   currentGame: string | null;
   gameData: Uint8Array | null;
+  currentRomId: string | null;
   aiStatus: 'idle' | 'thinking' | 'playing' | 'error';
   logs: LogEntry[];
   isMuted: boolean;
@@ -26,7 +28,7 @@ export interface GameState {
 }
 
 type GameStore = GameState & {
-  loadGame: (gameData: Uint8Array, fileName: string) => void;
+  loadGame: (gameData: Uint8Array, fileName: string) => Promise<void>;
   togglePlayPause: () => void;
   stopGame: () => void;
   toggleAI: () => void;
@@ -42,6 +44,7 @@ const initialState: GameState = {
   aiEnabled: false,
   currentGame: null,
   gameData: null,
+  currentRomId: null,
   aiStatus: 'idle',
   logs: [],
   isMuted: false,
@@ -58,13 +61,26 @@ export const useGameStore = create<GameStore>()(
     (set, get) => ({
       ...initialState,
       
-      loadGame: (gameData: Uint8Array, fileName: string) => {
-        set({
-          currentGame: fileName,
-          gameData,
-          isPlaying: false
-        });
-        get().addLog('game', `Loaded: ${fileName}`);
+      loadGame: async (gameData: Uint8Array, fileName: string) => {
+        try {
+          const romId = await getRomHash(gameData);
+          set({
+            currentGame: fileName,
+            gameData,
+            currentRomId: romId,
+            isPlaying: false
+          });
+          get().addLog('game', `Loaded: ${fileName} (ROM ID: ${romId.substring(0, 8)}...)`);
+        } catch (error) {
+          console.error('Error computing ROM hash:', error);
+          set({
+            currentGame: fileName,
+            gameData,
+            currentRomId: null,
+            isPlaying: false
+          });
+          get().addLog('game', `Loaded: ${fileName} (ROM ID computation failed)`);
+        }
       },
       
       togglePlayPause: () => {

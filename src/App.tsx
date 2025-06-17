@@ -7,6 +7,7 @@ import SettingsPanel from './components/SettingsPanel';
 import GameLog from './components/GameLog';
 import { useGameStore, type GameState, type AIConfig } from './store/gameStore';
 import { useButtonMemoryStore } from './store/buttonMemoryStore';
+import { useRomMemoryStore } from './store/romMemoryStore';
 
 function App() {
   const [activeTab, setActiveTab] = useState<'game' | 'settings' | 'log'>('game');
@@ -16,6 +17,7 @@ function App() {
     aiEnabled,
     currentGame,
     gameData,
+    currentRomId,
     aiStatus,
     logs,
     isMuted,
@@ -30,14 +32,15 @@ function App() {
     setAIStatus
   } = useGameStore();
 
-  const { successCounts, clearMemory } = useButtonMemoryStore();
+  const { successCounts, clearMemory, loadFromRomMemory } = useButtonMemoryStore();
+  const { loadRomMemory, clearRomMemory } = useRomMemoryStore();
 
   const emulatorRef = useRef<GameBoyEmulatorRef>(null);
   const aiControllerRef = useRef<AIControllerRef>(null);
   const screenRef = useRef<ImageData | null>(null);
 
-  const handleGameLoad = (gameData: Uint8Array, fileName: string) => {
-    loadGame(gameData, fileName);
+  const handleGameLoad = async (gameData: Uint8Array, fileName: string) => {
+    await loadGame(gameData, fileName);
   };
 
   const handleScreenUpdate = (screen: ImageData) => {
@@ -52,9 +55,34 @@ function App() {
     setAIStatus(status);
   };
 
+  const handleClearMemory = async () => {
+    clearMemory(); // Clear current session memory
+    if (currentRomId) {
+      await clearRomMemory(currentRomId); // Clear persistent ROM memory
+      addLog('info', `Cleared memory for ROM: ${currentRomId.substring(0, 8)}...`);
+    } else {
+      addLog('info', 'Cleared session memory');
+    }
+  };
+
   useEffect(() => {
     addLog('info', 'GameBoy AI Player initialized');
   }, [addLog]);
+
+  // Load ROM memory when a new ROM is loaded
+  useEffect(() => {
+    if (currentRomId) {
+      const loadMemory = async () => {
+        await loadRomMemory(currentRomId);
+        const romMemory = useRomMemoryStore.getState().currentMemory;
+        if (romMemory) {
+          loadFromRomMemory(romMemory.successCounts);
+          addLog('info', `Loaded memory for ROM: ${currentRomId.substring(0, 8)}...`);
+        }
+      };
+      loadMemory();
+    }
+  }, [currentRomId, loadRomMemory, loadFromRomMemory, addLog]);
 
   useEffect(() => {
     console.log(`[MANUAL TEST] App: AI Control useEffect triggered. AI Enabled: ${aiEnabled}, Is Playing: ${isPlaying}, Game: ${currentGame}`);
@@ -147,7 +175,7 @@ function App() {
                 <ControlPanel
                   aiConfig={aiConfig}
                   onConfigChange={handleAIConfigChange}
-                  gameState={{ isPlaying, aiEnabled, currentGame, gameData, aiStatus, logs, isMuted, aiConfig }}
+                  gameState={{ isPlaying, aiEnabled, currentGame, gameData, currentRomId, aiStatus, logs, isMuted, aiConfig }}
                 />
               </div>
             </div>
@@ -217,8 +245,8 @@ function App() {
           )}
           <button 
             className="memory-clear" 
-            onClick={clearMemory}
-            title="Clear Memory"
+            onClick={handleClearMemory}
+            title="Clear Memory for Current ROM"
           >
             🗑️
           </button>
@@ -233,7 +261,7 @@ function App() {
       <AIController
         ref={aiControllerRef}
         config={aiConfig}
-        gameState={{ isPlaying, aiEnabled, currentGame, gameData, aiStatus, logs, isMuted, aiConfig }}
+        gameState={{ isPlaying, aiEnabled, currentGame, gameData, currentRomId, aiStatus, logs, isMuted, aiConfig }}
         onStatusChange={handleAIStatusChange}
         onLog={addLog}
         emulatorRef={emulatorRef}
