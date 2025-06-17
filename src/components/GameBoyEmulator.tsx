@@ -98,10 +98,10 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
             await WasmBoy.setCanvas(canvasRef.current);
             // Ensure the canvas is scaled up for better visibility
             if (canvasRef.current) {
-              canvasRef.current.width = 480; // internal resolution
-              canvasRef.current.height = 432;
+              canvasRef.current.width = 480; // internal resolution  
+              canvasRef.current.height = 360;
               canvasRef.current.style.width = '480px';
-              canvasRef.current.style.height = '432px';
+              canvasRef.current.style.height = '360px';
               canvasRef.current.style.imageRendering = 'pixelated';
             }
             

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Cpu } from 'lucide-react';
+import { Settings, Cpu, Search } from 'lucide-react';
 import { AIConfig, GameState } from '../store/gameStore';
 import { useButtonMemoryStore } from '../store/buttonMemoryStore';
 
@@ -26,9 +26,14 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   gameState 
 }) => {
   const [availableModels, setAvailableModels] = useState<OpenRouterModel[]>([]);
+  const [filteredModels, setFilteredModels] = useState<OpenRouterModel[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
   const { successCounts, clearMemory } = useButtonMemoryStore();
+
+  // Default model - good balance of performance and cost
+  const DEFAULT_MODEL = 'anthropic/claude-3.5-sonnet';
 
   // Fetch available models from OpenRouter
   useEffect(() => {
@@ -45,37 +50,68 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         const data = await response.json();
         const models = data.data || [];
         
-        // Filter and sort models for better UX
-        const filteredModels = models
-          .filter((model: OpenRouterModel) => {
-            // Filter out models that are too expensive or specialized
-            const promptPrice = parseFloat(model.pricing?.prompt || '0');
-            return promptPrice < 0.01; // Filter out very expensive models
-          })
-          .sort((a: OpenRouterModel, b: OpenRouterModel) => {
-            // Sort by popularity/name
-            if (a.id.includes('gpt') && !b.id.includes('gpt')) return -1;
-            if (b.id.includes('gpt') && !a.id.includes('gpt')) return 1;
-            if (a.id.includes('claude') && !b.id.includes('claude')) return -1;
-            if (b.id.includes('claude') && !a.id.includes('claude')) return 1;
-            return a.name.localeCompare(b.name);
-          });
+        // Sort models by preference and popularity
+        const sortedModels = models.sort((a: OpenRouterModel, b: OpenRouterModel) => {
+          // Prioritize popular/good models at the top
+          const getModelPriority = (model: OpenRouterModel) => {
+            const id = model.id.toLowerCase();
+            if (id.includes('claude-3.5-sonnet')) return 1;
+            if (id.includes('gpt-4o') && !id.includes('mini')) return 2;
+            if (id.includes('claude-3.5-haiku')) return 3;
+            if (id.includes('gpt-4o-mini')) return 4;
+            if (id.includes('claude-3') && id.includes('sonnet')) return 5;
+            if (id.includes('gemini-1.5-pro')) return 6;
+            if (id.includes('gpt-4')) return 7;
+            if (id.includes('claude')) return 8;
+            if (id.includes('gemini')) return 9;
+            if (id.includes('llama')) return 10;
+            if (id.includes('gpt')) return 11;
+            return 12;
+          };
+          
+          const priorityA = getModelPriority(a);
+          const priorityB = getModelPriority(b);
+          
+          if (priorityA !== priorityB) {
+            return priorityA - priorityB;
+          }
+          
+          return a.name.localeCompare(b.name);
+        });
         
-        setAvailableModels(filteredModels);
-        console.log(`Loaded ${filteredModels.length} models from OpenRouter`);
+        setAvailableModels(sortedModels);
+        setFilteredModels(sortedModels);
+        
+        // Set default model if not already set
+        if (!aiConfig.model && sortedModels.length > 0) {
+          const defaultModel = sortedModels.find((m: OpenRouterModel) => m.id === DEFAULT_MODEL) || sortedModels[0];
+          onConfigChange({ ...aiConfig, model: defaultModel.id });
+        }
+        
+        console.log(`Loaded ${sortedModels.length} models from OpenRouter`);
       } catch (error) {
         console.error('Failed to fetch OpenRouter models:', error);
         setModelError(error instanceof Error ? error.message : 'Failed to load models');
         
-        // Fallback to hardcoded models
-        setAvailableModels([
-          { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', description: 'Fast and affordable' },
-          { id: 'openai/gpt-4o', name: 'GPT-4o', description: 'Most capable GPT-4 model' },
-          { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', description: 'Excellent reasoning' },
-          { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku', description: 'Fast and efficient' },
-          { id: 'google/gemini-pro', name: 'Gemini Pro', description: 'Google\'s flagship model' },
-          { id: 'meta-llama/llama-3.1-8b-instruct', name: 'Llama 3.1 8B', description: 'Open source' }
-        ]);
+        // Fallback to hardcoded models with enhanced selection
+        const fallbackModels = [
+          { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', description: 'Best reasoning and game understanding' },
+          { id: 'openai/gpt-4o', name: 'GPT-4o', description: 'Most capable GPT-4 model with vision' },
+          { id: 'anthropic/claude-3.5-haiku', name: 'Claude 3.5 Haiku', description: 'Fast and efficient Claude model' },
+          { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', description: 'Fast and affordable with vision' },
+          { id: 'google/gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: 'Google flagship with long context' },
+          { id: 'anthropic/claude-3-sonnet', name: 'Claude 3 Sonnet', description: 'Excellent reasoning' },
+          { id: 'meta-llama/llama-3.1-70b-instruct', name: 'Llama 3.1 70B', description: 'Large open source model' },
+          { id: 'meta-llama/llama-3.1-8b-instruct', name: 'Llama 3.1 8B', description: 'Efficient open source' }
+        ];
+        
+        setAvailableModels(fallbackModels);
+        setFilteredModels(fallbackModels);
+        
+        // Set default for fallback too
+        if (!aiConfig.model) {
+          onConfigChange({ ...aiConfig, model: DEFAULT_MODEL });
+        }
       } finally {
         setIsLoadingModels(false);
       }
@@ -84,8 +120,32 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     fetchModels();
   }, []);
 
+  // Filter models based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredModels(availableModels);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = availableModels.filter(model => 
+        model.name.toLowerCase().includes(query) ||
+        model.id.toLowerCase().includes(query) ||
+        (model.description && model.description.toLowerCase().includes(query))
+      );
+      setFilteredModels(filtered);
+    }
+  }, [searchQuery, availableModels]);
+
   const handleConfigChange = (updates: Partial<AIConfig>) => {
     onConfigChange({ ...aiConfig, ...updates });
+  };
+
+  const formatPrice = (price: string | undefined) => {
+    if (!price) return 'Free';
+    const num = parseFloat(price);
+    if (num === 0) return 'Free';
+    if (num < 0.001) return `$${(num * 1000000).toFixed(2)}/1M`;
+    if (num < 1) return `$${(num * 1000).toFixed(2)}/1K`;
+    return `$${num.toFixed(2)}/1K`;
   };
 
   return (
@@ -161,16 +221,17 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         </div>
       </div>
 
-      {/* Model Selection */}
+      {/* Model Selection with Search */}
       <div style={{ marginBottom: '16px' }}>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: 'white' }}>
           AI Model {isLoadingModels && '(Loading...)'}
-          {!isLoadingModels && availableModels.length > 0 && (
+          {!isLoadingModels && (
             <span style={{ fontSize: '12px', fontWeight: 'normal', opacity: 0.7 }}>
-              ({availableModels.length} available)
+              ({filteredModels.length} of {availableModels.length} models)
             </span>
           )}
         </label>
+        
         {modelError && (
           <div style={{ 
             fontSize: '11px', 
@@ -183,6 +244,35 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             ⚠️ {modelError} (using fallback models)
           </div>
         )}
+
+        {/* Search Input */}
+        <div style={{ position: 'relative', marginBottom: '8px' }}>
+          <Search 
+            size={16} 
+            style={{ 
+              position: 'absolute', 
+              left: '8px', 
+              top: '50%', 
+              transform: 'translateY(-50%)', 
+              color: 'rgba(255,255,255,0.5)' 
+            }} 
+          />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search models (e.g., claude, gpt, gemini)..."
+            className="input-field"
+            style={{
+              paddingLeft: '32px',
+              fontSize: '13px',
+              background: 'rgba(0,0,0,0.3)',
+              marginBottom: '0'
+            }}
+          />
+        </div>
+
+        {/* Model Select Dropdown */}
         <select
           value={aiConfig.model}
           onChange={(e) => handleConfigChange({ model: e.target.value })}
@@ -195,42 +285,65 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             border: '1px solid #40444b',
             borderRadius: '4px',
             color: 'white',
-            fontSize: '14px',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
+            fontSize: '13px',
+            maxHeight: '200px',
+            overflow: 'auto'
           }}
         >
-          {availableModels.map(model => (
-            <option 
-              key={model.id} 
-              value={model.id} 
-              style={{ 
-                background: '#1e2124',
-                padding: '4px 8px',
-                fontSize: '14px'
-              }}
-            >
-              {model.name}
-            </option>
-          ))}
+          {filteredModels.map(model => {
+            const isRecommended = model.id === DEFAULT_MODEL;
+            const pricing = model.pricing;
+            const promptPrice = formatPrice(pricing?.prompt);
+            
+            return (
+              <option 
+                key={model.id} 
+                value={model.id} 
+                style={{ 
+                  background: '#1e2124',
+                  padding: '6px 8px',
+                  fontSize: '13px'
+                }}
+              >
+                {isRecommended ? '⭐ ' : ''}{model.name} {promptPrice !== 'Free' ? `(${promptPrice})` : ''}
+              </option>
+            );
+          })}
         </select>
-        {/* Show description of selected model */}
+
+        {/* Show description and details of selected model */}
         {(() => {
-          const selectedModel = availableModels.find(m => m.id === aiConfig.model);
+          const selectedModel = filteredModels.find((m: OpenRouterModel) => m.id === aiConfig.model) || 
+                               availableModels.find((m: OpenRouterModel) => m.id === aiConfig.model);
           const isVisionModel = aiConfig.model.includes('claude') || 
                                aiConfig.model.includes('gpt-4') || 
                                aiConfig.model.includes('gemini') ||
                                aiConfig.model.includes('vision');
+          const isDefault = aiConfig.model === DEFAULT_MODEL;
           
           return (
-            <div>
+            <div style={{ marginTop: '8px' }}>
+              {/* Default indicator */}
+              {isDefault && (
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: '#fbbf24',
+                  marginBottom: '4px',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  ⭐ Recommended Default - Best for game playing
+                </div>
+              )}
+              
               {/* Vision indicator */}
               {isVisionModel && (
                 <div style={{ 
                   fontSize: '11px', 
                   color: '#22c55e',
-                  marginTop: '4px',
+                  marginBottom: '4px',
                   fontWeight: 'bold',
                   display: 'flex',
                   alignItems: 'center',
@@ -244,12 +357,28 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
               {selectedModel?.description && (
                 <div style={{ 
                   fontSize: '11px', 
-                  color: 'rgba(255,255,255,0.6)',
-                  marginTop: '4px',
+                  color: 'rgba(255,255,255,0.7)',
+                  marginBottom: '4px',
                   fontStyle: 'italic',
                   lineHeight: '1.3'
                 }}>
                   {selectedModel.description}
+                </div>
+              )}
+
+              {/* Pricing info */}
+              {selectedModel?.pricing && (
+                <div style={{ 
+                  fontSize: '10px', 
+                  color: 'rgba(255,255,255,0.5)',
+                  display: 'flex',
+                  gap: '12px'
+                }}>
+                  <span>Input: {formatPrice(selectedModel.pricing.prompt)}</span>
+                  <span>Output: {formatPrice(selectedModel.pricing.completion)}</span>
+                  {selectedModel.context_length && (
+                    <span>Context: {selectedModel.context_length.toLocaleString()}</span>
+                  )}
                 </div>
               )}
             </div>
