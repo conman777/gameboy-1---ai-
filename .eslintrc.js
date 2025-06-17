@@ -19,7 +19,14 @@ module.exports = {
   },
   plugins: ['react', '@typescript-eslint'],
   rules: {
-    // Add any specific rules here
+    // React 17+ JSX transform no longer requires React to be in scope
+    'react/react-in-jsx-scope': 'off',
+
+    // Allow 'any' in areas that interact with external libs or debugging helpers
+    '@typescript-eslint/no-explicit-any': 'off',
+
+    // Ignore unused vars/params that start with an underscore
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
   },
   settings: {
     react: {

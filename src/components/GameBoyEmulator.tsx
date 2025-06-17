@@ -266,7 +266,11 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (!ctx) return null;
         
-        return ctx.getImageData(0, 0, canvas.width, canvas.height);
+        // Always capture the Game Boy's native resolution (160×144) regardless of display scaling
+        const NATIVE_WIDTH = 160;
+        const NATIVE_HEIGHT = 144;
+
+        return ctx.getImageData(0, 0, NATIVE_WIDTH, NATIVE_HEIGHT);
       } catch (error) {
         // console.error('Failed to get screen data:', error);
         return null;
@@ -442,82 +446,123 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
 
 
     return (
-        <div
-          style={{
-            background: 'linear-gradient(145deg, #9bb563, #8faa5a)',
-            padding: '20px',
-            borderRadius: '12px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-            border: '3px solid #7a9147',
-            width: '480px',
-            maxWidth: '100%',
-            margin: '0 auto'
-          }}
-        >
-        <div style={{
-          background: '#1e2124',
-          padding: '16px',
-          borderRadius: '8px',
-          marginBottom: '16px',
-          border: '2px solid #36393f'
-        }}>
-          <canvas
-            id="wasmboy-canvas"
-            ref={canvasRef}
-            width={160}
-            height={144}
-            style={{
-              width: '480px',
-              height: '432px',
-              imageRendering: 'pixelated',
-              background: '#0f380f',
-              border: '2px solid #306230'
-            }}
-          />
+      <div className="gameboy-dmg">
+        {/* Game Boy Body */}
+        <div className="gameboy-body">
+          
+          {/* Top Section with Branding */}
+          <div className="gameboy-top">
+            <div className="gameboy-logo">
+              <div className="nintendo-logo">Nintendo</div>
+              <div className="gameboy-text">GAME BOY</div>
+            </div>
+          </div>
+
+          {/* Screen Section */}
+          <div className="gameboy-screen-section">
+            <div className="screen-label">DOT MATRIX WITH STEREO SOUND</div>
+            
+            <div className="screen-housing">
+              <div className="screen-bezel">
+                <div className="screen-glass">
+                  <canvas
+                    id="wasmboy-canvas"
+                    ref={canvasRef}
+                    width={160}
+                    height={144}
+                    className="gameboy-lcd"
+                  />
+                </div>
+              </div>
+              
+              {/* Power LED */}
+              <div className="power-section">
+                <div className={`power-led ${isPlaying ? 'power-on' : 'power-off'}`}></div>
+                <div className="power-label">POWER</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Nintendo Branding */}
+          <div className="nintendo-section">
+            <div className="nintendo-text">Nintendo GAME BOY</div>
+          </div>
+
+          {/* D-Pad and Controls Section */}
+          <div className="controls-section">
+            
+            {/* Left Side - D-Pad */}
+            <div className="dpad-section">
+              <div className="dpad-container">
+                <div className="dpad">
+                  <div className="dpad-center"></div>
+                  <div className="dpad-up"></div>
+                  <div className="dpad-down"></div>
+                  <div className="dpad-left"></div>
+                  <div className="dpad-right"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side - Action Buttons */}
+            <div className="action-section">
+              <div className="action-buttons">
+                <div className="button-b">
+                  <div className="button-face">B</div>
+                </div>
+                <div className="button-a">
+                  <div className="button-face">A</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Start/Select Section */}
+          <div className="start-select-section">
+            <div className="small-button select-button">
+              <div className="small-button-face"></div>
+              <div className="button-label">SELECT</div>
+            </div>
+            <div className="small-button start-button">
+              <div className="small-button-face"></div>
+              <div className="button-label">START</div>
+            </div>
+          </div>
+
+          {/* Bottom Section */}
+          <div className="gameboy-bottom">
+            <div className="speaker-grille">
+              <div className="speaker-holes">
+                {Array.from({ length: 24 }, (_, i) => (
+                  <div key={i} className="speaker-hole"></div>
+                ))}
+              </div>
+            </div>
+            
+            {/* File Upload (Hidden in body) */}
+            {!gameData && (
+              <div className="rom-loader">
+                <label className="rom-upload-label">
+                  <Upload size={16} />
+                  Load ROM (.gb/.gbc)
+                  <input
+                    type="file"
+                    accept=".gb,.gbc"
+                    onChange={handleFileUpload}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* Volume Slider and Headphone Jack */}
+          <div className="gameboy-side-details">
+            <div className="volume-slider"></div>
+            <div className="headphone-jack"></div>
+          </div>
+
         </div>
-
-        {!gameData && (
-          <div style={{
-            textAlign: 'center',
-            marginBottom: '16px'
-          }}>
-            <label style={{
-              display: 'inline-block',
-              padding: '12px 24px',
-              background: 'linear-gradient(145deg, #4a5568, #2d3748)',
-              color: 'white',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              border: '2px solid #1a202c',
-              fontSize: '14px',
-              fontWeight: 'bold'
-            }}>
-              <Upload size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-              Load ROM (.gb/.gbc)
-              <input
-                type="file"
-                accept=".gb,.gbc"
-                onChange={handleFileUpload}
-                style={{ display: 'none' }}
-              />
-            </label>
-          </div>
-        )}
-
-        {gameData && (
-          <div style={{
-            marginTop: '12px',
-            padding: '8px',
-            background: 'rgba(30, 33, 36, 0.3)',
-            borderRadius: '4px',
-            fontSize: '10px',
-            color: '#1e2124',
-            textAlign: 'center'
-          }}>
-            <strong>Keyboard:</strong> Arrow Keys = D-Pad • Z = A • X = B • Enter = Start • Space = Select
-          </div>
-        )}
-
       </div>
     );
   }
