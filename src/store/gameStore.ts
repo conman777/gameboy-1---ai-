@@ -15,6 +15,14 @@ export interface AIConfig {
   maxTokens: number;
 }
 
+export interface UsageStats {
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  totalRequests: number;
+  totalCost: number;
+  sessionStartTime: Date;
+}
+
 export interface GameState {
   isPlaying: boolean;
   aiEnabled: boolean;
@@ -25,9 +33,10 @@ export interface GameState {
   logs: LogEntry[];
   isMuted: boolean;
   aiConfig: AIConfig;
+  usageStats: UsageStats;
 }
 
-type GameStore = GameState & {
+export interface GameStore extends GameState {
   loadGame: (gameData: Uint8Array, fileName: string) => Promise<void>;
   togglePlayPause: () => void;
   stopGame: () => void;
@@ -37,7 +46,9 @@ type GameStore = GameState & {
   clearLogs: () => void;
   updateAIConfig: (config: AIConfig) => void;
   setAIStatus: (status: GameState['aiStatus']) => void;
-}; 
+  updateUsageStats: (promptTokens: number, completionTokens: number, cost: number) => void;
+  resetUsageStats: () => void;
+}
 
 const initialState: GameState = {
   isPlaying: false,
@@ -53,6 +64,13 @@ const initialState: GameState = {
     model: 'anthropic/claude-3-haiku',
     temperature: 0.7,
     maxTokens: 1000
+  },
+  usageStats: {
+    totalPromptTokens: 0,
+    totalCompletionTokens: 0,
+    totalRequests: 0,
+    totalCost: 0,
+    sessionStartTime: new Date()
   }
 };
 
@@ -157,6 +175,31 @@ export const useGameStore = create<GameStore>()(
       
       setAIStatus: (status: GameState['aiStatus']) => {
         set({ aiStatus: status });
+      },
+
+      updateUsageStats: (promptTokens: number, completionTokens: number, cost: number) => {
+        set(state => ({
+          usageStats: {
+            ...state.usageStats,
+            totalPromptTokens: state.usageStats.totalPromptTokens + promptTokens,
+            totalCompletionTokens: state.usageStats.totalCompletionTokens + completionTokens,
+            totalRequests: state.usageStats.totalRequests + 1,
+            totalCost: state.usageStats.totalCost + cost
+          }
+        }));
+      },
+
+      resetUsageStats: () => {
+        set({
+          usageStats: {
+            totalPromptTokens: 0,
+            totalCompletionTokens: 0,
+            totalRequests: 0,
+            totalCost: 0,
+            sessionStartTime: new Date()
+          }
+        });
+        get().addLog('info', 'Usage statistics reset');
       }
     }),
     {

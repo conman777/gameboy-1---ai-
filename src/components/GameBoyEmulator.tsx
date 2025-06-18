@@ -36,7 +36,17 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const wasmBoyInitialized = useRef(false);
     const [isInitialized, setIsInitialized] = useState(false);
-    const [, setCurrentJoypadState] = useState<JoypadState>({ // currentJoypadState is unused
+    const [, setCurrentJoypadState] = useState<JoypadState>({
+      UP: false,
+      RIGHT: false,
+      DOWN: false,
+      LEFT: false,
+      A: false,
+      B: false,
+      SELECT: false,
+      START: false
+    });
+    const currentJoypadStateRef = useRef<JoypadState>({
       UP: false,
       RIGHT: false,
       DOWN: false,
@@ -96,12 +106,12 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
             // console.log('🖼️ Setting canvas for WasmBoy rendering...');
             // Wait for WasmBoy to finish binding the canvas so our styles stick
             await WasmBoy.setCanvas(canvasRef.current);
-            // Ensure the canvas is scaled up for better visibility
+            // Ensure the canvas is scaled appropriately for Full HD screens
             if (canvasRef.current) {
-              canvasRef.current.width = 480; // internal resolution  
-              canvasRef.current.height = 360;
-              canvasRef.current.style.width = '480px';
-              canvasRef.current.style.height = '360px';
+              canvasRef.current.width = 400; // internal resolution  
+              canvasRef.current.height = 300;
+              canvasRef.current.style.width = '400px';
+              canvasRef.current.style.height = '300px';
               canvasRef.current.style.imageRendering = 'pixelated';
             }
             
@@ -207,51 +217,41 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
     //   }
     // }, [currentJoypadState]);
 
+    // Capture every (FRAME_SKIP_COUNT + 1)-th frame; value 0 means capture all frames.
+    const FRAME_SKIP_COUNT = 2; // capture 1 out of 3 frames to reduce main-thread load
+
     // Screen update loop
     useEffect(() => {
-      // console.log('=== SCREEN UPDATE EFFECT TRIGGERED ===');
-      
       let animationFrameId: number;
-      // let frameCount = 0; // frameCount not used for essential logic
-      
+      let frameSkip = 0;
+
       const updateScreen = () => {
         if (wasmBoyInitialized.current && isPlaying) {
           try {
-            // frameCount++;
-            // if (frameCount % 120 === 0) { // Example: reduce logging frequency or remove
-            //   console.log(`Screen update loop running, frame ${frameCount}`);
-            // }
-            
-            const screenData = getScreenData();
-            if (screenData) {
-              onScreenUpdate(screenData);
+            if (frameSkip === 0) {
+              // Apply current joypad state each frame so held buttons register
+              try { WasmBoy.setJoypadState(currentJoypadStateRef.current); } catch{}
+
+              const screenData = getScreenData();
+              if (screenData) onScreenUpdate(screenData);
             }
-            // else if (frameCount % 60 === 0) { // Reduce or remove logging
-            //   console.warn('No screen data available');
-            // }
+            frameSkip = (frameSkip + 1) % (FRAME_SKIP_COUNT + 1);
           } catch (error) {
-            // console.error('Error updating screen:', error);
+            // swallow rendering errors to avoid breaking the loop
           }
         }
-        
+
         if (isPlaying) {
           animationFrameId = requestAnimationFrame(updateScreen);
         }
       };
-      
+
       if (isPlaying && wasmBoyInitialized.current) {
-        // console.log('✅ Starting screen update loop');
         updateScreen();
       }
-      // else {
-      //   console.log('❌ Not starting screen update loop:', { isPlaying, wasmBoyInitialized: wasmBoyInitialized.current });
-      // }
-      
+
       return () => {
-        if (animationFrameId) {
-          // console.log('Stopping screen update loop');
-          cancelAnimationFrame(animationFrameId);
-        }
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
       };
     }, [isPlaying, onScreenUpdate]);
 
@@ -330,6 +330,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
         }
         setCurrentJoypadState(prevState => {
           const newState = { ...prevState, [joypadKey]: true };
+          currentJoypadStateRef.current = newState;
           try {
             WasmBoy.setJoypadState(newState);
           } catch (error) {
@@ -343,37 +344,28 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
       }
     };
 
+    const releaseButton = async (button: string) => {
+      if (!wasmBoyInitialized.current) return;
+      try {
+        const joypadKey = buttonMap[button.toUpperCase()];
+        if (!joypadKey) return;
+        setCurrentJoypadState(prevState => {
+          const newState = { ...prevState, [joypadKey]: false };
+          currentJoypadStateRef.current = newState;
+          try {
+            WasmBoy.setJoypadState(newState);
+          } catch {}
+          return newState;
+        });
+      } catch {}
+    };
+
     useImperativeHandle(ref, () => ({
       reset: () => {
         if (wasmBoyInitialized.current) WasmBoy.reset();
       },
       pressButton,
-      releaseButton: async (button: string) => {
-        if (!wasmBoyInitialized.current) {
-          // console.warn('⚠️ WasmBoy not initialized, cannot release button');
-          return;
-        }
-        // console.log(`🎮 RELEASING BUTTON: ${button}`);
-        try {
-          const joypadKey = buttonMap[button.toUpperCase()];
-          if (!joypadKey) {
-            // console.warn('Unknown button:', button);
-            return;
-          }
-          setCurrentJoypadState(prevState => {
-            const newState = { ...prevState, [joypadKey]: false };
-            try {
-              WasmBoy.setJoypadState(newState);
-            } catch (error) {
-              // console.error('❌ Error calling WasmBoy.setJoypadState for release:', error);
-            }
-            return newState;
-          });
-          // console.log(`✅ Button ${button} released`);
-        } catch (error) {
-          // console.error(`❌ Error releasing button ${button}:`, error);
-        }
-      },
+      releaseButton,
       getScreenData,
       isReady: () => wasmBoyInitialized.current && WasmBoy.isReady()
     }));
@@ -444,6 +436,52 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
       console.error('Game load error:', error);
     };
 
+    // ----------------------------
+    // Xbox / Generic Gamepad support via browser Gamepad API
+    // ----------------------------
+
+    // Map gamepad button indices to Game Boy buttons (standard Xbox layout)
+    const GAMEPAD_BUTTON_MAP: Record<number, string> = {
+      12: 'UP',     // D-pad Up
+      13: 'DOWN',   // D-pad Down
+      14: 'LEFT',   // D-pad Left
+      15: 'RIGHT',  // D-pad Right
+      0: 'A',       // A (bottom face)
+      1: 'B',       // B (right face)
+      9: 'START',   // Menu / Start
+      8: 'SELECT'   // View / Back
+    };
+
+    // Poll the Gamepad API every animation frame
+    useEffect(() => {
+      let rafId: number;
+      const buttonState: Record<number, boolean> = {};
+
+      const poll = () => {
+        const pads = navigator.getGamepads?.() || [];
+        const pad = Array.from(pads).find(p => p && p.connected);
+        if (pad) {
+          pad.buttons.forEach((btn, index) => {
+            const mapped = GAMEPAD_BUTTON_MAP[index];
+            if (!mapped) return;
+
+            if (btn.pressed && !buttonState[index]) {
+              // Edge: button just pressed
+              pressButton(mapped);
+              buttonState[index] = true;
+            } else if (!btn.pressed && buttonState[index]) {
+              // Edge: button just released
+              releaseButton(mapped);
+              buttonState[index] = false;
+            }
+          });
+        }
+        rafId = requestAnimationFrame(poll);
+      };
+
+      rafId = requestAnimationFrame(poll);
+      return () => cancelAnimationFrame(rafId);
+    }, []);
 
     return (
       <div className="gameboy-dmg">
@@ -496,10 +534,30 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
               <div className="dpad-container">
                 <div className="dpad">
                   <div className="dpad-center"></div>
-                  <div className="dpad-up"></div>
-                  <div className="dpad-down"></div>
-                  <div className="dpad-left"></div>
-                  <div className="dpad-right"></div>
+                  <div
+                    className="dpad-up"
+                    onMouseDown={() => pressButton('UP')}
+                    onMouseUp={() => releaseButton('UP')}
+                    onMouseLeave={() => releaseButton('UP')}
+                  ></div>
+                  <div
+                    className="dpad-down"
+                    onMouseDown={() => pressButton('DOWN')}
+                    onMouseUp={() => releaseButton('DOWN')}
+                    onMouseLeave={() => releaseButton('DOWN')}
+                  ></div>
+                  <div
+                    className="dpad-left"
+                    onMouseDown={() => pressButton('LEFT')}
+                    onMouseUp={() => releaseButton('LEFT')}
+                    onMouseLeave={() => releaseButton('LEFT')}
+                  ></div>
+                  <div
+                    className="dpad-right"
+                    onMouseDown={() => pressButton('RIGHT')}
+                    onMouseUp={() => releaseButton('RIGHT')}
+                    onMouseLeave={() => releaseButton('RIGHT')}
+                  ></div>
                 </div>
               </div>
             </div>
@@ -507,10 +565,20 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
             {/* Right Side - Action Buttons */}
             <div className="action-section">
               <div className="action-buttons">
-                <div className="button-b">
+                <div
+                  className="button-b"
+                  onMouseDown={() => pressButton('B')}
+                  onMouseUp={() => releaseButton('B')}
+                  onMouseLeave={() => releaseButton('B')}
+                >
                   <div className="button-face">B</div>
                 </div>
-                <div className="button-a">
+                <div
+                  className="button-a"
+                  onMouseDown={() => pressButton('A')}
+                  onMouseUp={() => releaseButton('A')}
+                  onMouseLeave={() => releaseButton('A')}
+                >
                   <div className="button-face">A</div>
                 </div>
               </div>
@@ -519,11 +587,21 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
 
           {/* Start/Select Section */}
           <div className="start-select-section">
-            <div className="small-button select-button">
+            <div
+              className="small-button select-button"
+              onMouseDown={() => pressButton('SELECT')}
+              onMouseUp={() => releaseButton('SELECT')}
+              onMouseLeave={() => releaseButton('SELECT')}
+            >
               <div className="small-button-face"></div>
               <div className="button-label">SELECT</div>
             </div>
-            <div className="small-button start-button">
+            <div
+              className="small-button start-button"
+              onMouseDown={() => pressButton('START')}
+              onMouseUp={() => releaseButton('START')}
+              onMouseLeave={() => releaseButton('START')}
+            >
               <div className="small-button-face"></div>
               <div className="button-label">START</div>
             </div>

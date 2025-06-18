@@ -9,6 +9,7 @@ interface AIControllerProps {
   gameState: GameState;
   onStatusChange: (status: GameState['aiStatus']) => void;
   onLog: (type: LogEntry['type'], message: string) => void;
+  onTokenUsage?: (promptTokens: number, completionTokens: number, model: string) => void;
   emulatorRef: React.RefObject<GameBoyEmulatorRef>;
 }
 
@@ -19,13 +20,18 @@ export interface AIControllerRef {
 }
 
 const AIController = forwardRef<AIControllerRef, AIControllerProps>(
-  ({ config, gameState, onStatusChange, onLog, emulatorRef }, ref) => {
+  ({ config, gameState, onStatusChange, onLog, onTokenUsage, emulatorRef }, ref) => {
     const intervalRef = useRef<number | null>(null);
     const isPlayingRef = useRef(false);
     // const lastScreenDataRef = useRef<ImageData | null>(null);
     const lastDecisionRef = useRef<string | null>(null);
     const decisionCountRef = useRef<{ [key: string]: number }>({});
     const recordButtonSuccess = useButtonMemoryStore(state => state.recordSuccess);
+    
+    // Rate limiting state
+    const lastRequestTimeRef = useRef<number>(Date.now() - 5000); // Initialize to 5 seconds ago
+    const requestDelayRef = useRef<number>(2000); // Start with 2 second delay
+    const consecutiveErrorsRef = useRef<number>(0);
   
 
 
@@ -140,8 +146,10 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
           // console.log('AIController: All conditions met, making AI decision...');
           await makeAIDecision();
           
-          // Wait 500ms between AI decisions
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Use dynamic delay based on rate limiting
+          const currentDelay = requestDelayRef.current;
+          onLog('ai', `⏱️ Waiting ${currentDelay}ms before next decision...`);
+          await new Promise(resolve => setTimeout(resolve, currentDelay));
         }
         
         // console.log('AIController: AI loop ended');
@@ -169,6 +177,24 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
 
     const makeAIDecision = async () => {
       try {
+        // Check rate limiting
+        const now = Date.now();
+        const timeSinceLastRequest = now - lastRequestTimeRef.current;
+        const currentDelay = requestDelayRef.current;
+        
+        console.log('AIController: Rate limit check:', { 
+          timeSinceLastRequest, 
+          currentDelay, 
+          shouldWait: timeSinceLastRequest < currentDelay 
+        });
+        
+        if (timeSinceLastRequest < currentDelay) {
+          const waitTime = currentDelay - timeSinceLastRequest;
+          onLog('ai', `🚦 Rate limiting: waiting ${waitTime}ms...`);
+          console.log('AIController: Waiting for rate limit:', waitTime);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+        
         // console.log('AIController: Making AI decision...');
         onStatusChange('thinking');
         
@@ -192,6 +218,9 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
         
         const decision = await getAIDecisionWithVision(base64Image);
         console.log('AIController: AI decision result:', decision);
+        
+        // Update last request time after successful decision
+        lastRequestTimeRef.current = Date.now();
         
         if (decision && emulatorRef.current) {
           onStatusChange('playing');
@@ -234,7 +263,21 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
       } catch (error) {
         // console.error('AIController: AI decision error:', error);
         onStatusChange('error');
-        onLog('error', `AI error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        
+        if (error instanceof Error && error.message.includes('Rate limit exceeded')) {
+          // For rate limit errors, don't stop the AI - just wait longer
+          onLog('info', `Rate limit hit - will wait longer before next request`);
+          onStatusChange('thinking'); // Keep AI running but in thinking state
+        } else {
+          onLog('error', `AI error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          
+          // If we have too many consecutive errors, increase delay significantly
+          consecutiveErrorsRef.current += 1;
+          if (consecutiveErrorsRef.current >= 3) {
+            requestDelayRef.current = Math.min(requestDelayRef.current * 2, 30000);
+            onLog('info', `Multiple errors detected, increasing delay to ${requestDelayRef.current}ms`);
+          }
+        }
       }
     };
 
@@ -429,6 +472,32 @@ Respond with your reasoning and decision.`
         console.log('AIController: Full AI response:', fullResponse);
         console.log('AIController: Response data:', response.data);
         
+        // Successful request - reset error count and gradually reduce delay
+        consecutiveErrorsRef.current = 0;
+        if (requestDelayRef.current > 2000) {
+          requestDelayRef.current = Math.max(2000, requestDelayRef.current * 0.8); // Gradually reduce delay
+          onLog('ai', `✅ Request successful, reduced delay to ${requestDelayRef.current}ms`);
+        }
+        
+        // Track real-time token usage and costs
+        const usage = response.data.usage;
+        if (usage) {
+          console.log('AIController: Token usage:', usage);
+          const promptTokens = usage.prompt_tokens || 0;
+          const completionTokens = usage.completion_tokens || 0;
+          const totalTokens = usage.total_tokens || 0;
+          
+          onLog('ai', `📊 Tokens: ${promptTokens} prompt + ${completionTokens} completion = ${totalTokens} total`);
+          
+          // Send token usage data to parent component for cost calculation
+          if (onTokenUsage) {
+            onTokenUsage(promptTokens, completionTokens, config.model);
+          }
+          
+          // Log the usage for immediate visibility
+          onLog('ai', `💰 Request completed - Prompt: ${promptTokens} tokens, Completion: ${completionTokens} tokens`);
+        }
+        
         let decision = fullResponse; // Default to full response
         
         if (fullResponse) {
@@ -490,18 +559,27 @@ Respond with your reasoning and decision.`
         if (axios.isAxiosError(error)) {
           console.error('API Response:', error.response?.data);
           console.error('API Status:', error.response?.status);
-        }
-        onLog('error', `OpenRouter API error: ${error instanceof Error ? error.message : "Unknown error"}`);
-        if (axios.isAxiosError(error)) {
-          if (error.response?.status === 401) {
+          
+          if (error.response?.status === 429) {
+            // Rate limit hit - implement exponential backoff
+            consecutiveErrorsRef.current += 1;
+            const oldDelay = requestDelayRef.current;
+            const newDelay = Math.min(oldDelay * 2, 30000); // Cap at 30 seconds
+            requestDelayRef.current = newDelay;
+            
+            console.log('AIController: Rate limit hit! Delay increased from', oldDelay, 'to', newDelay);
+            onLog('error', `🚦 Rate limit exceeded! Increasing delay from ${oldDelay}ms to ${newDelay}ms`);
+            onLog('ai', `⏳ Will wait longer between requests to avoid rate limits`);
+            
+            throw new Error(`Rate limit exceeded. Increased delay to ${newDelay}ms`);
+          } else if (error.response?.status === 401) {
             throw new Error('Invalid API key');
-          } else if (error.response?.status === 429) {
-            throw new Error('Rate limit exceeded');
           } else {
             throw new Error(`API error: ${error.response?.status || 'Unknown'}`);
           }
         }
         
+        onLog('error', `OpenRouter API error: ${error instanceof Error ? error.message : "Unknown error"}`);
         throw error;
       }
       

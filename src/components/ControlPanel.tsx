@@ -7,6 +7,12 @@ interface ControlPanelProps {
   aiConfig: AIConfig;
   onConfigChange: (config: AIConfig) => void;
   gameState: GameState;
+  successCounts: Record<string, number>;
+  onToggleAI: () => void;
+  onTogglePlayPause: () => void;
+  onStopGame: () => void;
+  onClearMemory: () => Promise<void>;
+  onResetUsageStats?: () => void;
 }
 
 interface OpenRouterModel {
@@ -23,14 +29,20 @@ interface OpenRouterModel {
 const ControlPanel: React.FC<ControlPanelProps> = ({ 
   aiConfig, 
   onConfigChange, 
-  gameState 
+  gameState,
+  successCounts,
+  onToggleAI,
+  onTogglePlayPause,
+  onStopGame,
+  onClearMemory,
+  onResetUsageStats
 }) => {
   const [availableModels, setAvailableModels] = useState<OpenRouterModel[]>([]);
   const [filteredModels, setFilteredModels] = useState<OpenRouterModel[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
-  const { successCounts, clearMemory } = useButtonMemoryStore();
+  const { clearMemory } = useButtonMemoryStore();
   const [refreshCount, setRefreshCount] = useState(0);
 
   // Default model - good balance of performance and cost
@@ -157,8 +169,97 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     return `$${num.toFixed(2)}/1K`;
   };
 
+  const calculateEstimatedCost = (selectedModel: OpenRouterModel | undefined) => {
+    if (!selectedModel?.pricing) return null;
+    
+    const promptPrice = parseFloat(selectedModel.pricing.prompt) || 0;
+    const completionPrice = parseFloat(selectedModel.pricing.completion) || 0;
+    
+    // Estimate tokens for game playing
+    const avgPromptTokens = 1000; // Image + instructions + context
+    const avgCompletionTokens = 100; // AI response
+    const decisionsPerMinute = 2; // AI makes ~2 decisions per minute
+    
+    const costPerDecision = (avgPromptTokens * promptPrice) + (avgCompletionTokens * completionPrice);
+    const costPerMinute = costPerDecision * decisionsPerMinute;
+    const costPerHour = costPerMinute * 60;
+    
+    return {
+      perDecision: costPerDecision,
+      perMinute: costPerMinute,
+      perHour: costPerHour
+    };
+  };
+
   return (
     <div className="controls-panel">
+      {/* Quick Actions Section */}
+      <div className="quick-actions">
+        <div className="action-group">
+          <button 
+            className={`action-button ${gameState.aiEnabled ? 'ai-active' : 'ai-inactive'}`}
+            onClick={onToggleAI}
+            title="Toggle AI (Ctrl+A)"
+          >
+            {gameState.aiEnabled ? 'STOP AI' : 'START AI'}
+          </button>
+          <button 
+            className="action-button"
+            onClick={onTogglePlayPause}
+            disabled={!gameState.currentGame}
+            title="Play/Pause (Space)"
+          >
+            {gameState.isPlaying ? 'PAUSE' : 'PLAY'}
+          </button>
+          <button 
+            className="action-button"
+            onClick={onStopGame}
+            disabled={!gameState.currentGame}
+            title="Stop Game (Escape)"
+          >
+            STOP
+          </button>
+        </div>
+
+        <div className="memory-display">
+          <div className="memory-content">
+            <span className="memory-label">Memory</span>
+            <div className="memory-stats">
+              {Object.entries(successCounts).length > 0 ? (
+                Object.entries(successCounts)
+                  .sort(([,a], [,b]) => b - a)
+                  .slice(0, 3)
+                  .map(([button, count]) => (
+                    <span key={button} className="memory-item">
+                      {button} {count}
+                    </span>
+                  ))
+              ) : (
+                <span className="memory-item">No data</span>
+              )}
+            </div>
+          </div>
+          <button 
+            className="memory-clear" 
+            onClick={onClearMemory}
+            title="Clear Memory"
+          >
+            Clear
+          </button>
+        </div>
+
+        <div className="controls-hint">
+          <div className="controls-row">
+            <span>Arrows = D-Pad</span>
+            <span>Z = A, X = B</span>
+          </div>
+          <div className="controls-row">
+            <span>Enter = Start</span>
+            <span>Space = Select</span>
+          </div>
+        </div>
+      </div>
+
       <h3 className="panel-title">
         <Cpu size={20} />
         AI Control
@@ -405,6 +506,97 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                   )}
                 </div>
               )}
+
+              {/* Real-time Cost Tracking */}
+              {(() => {
+                const usageStats = gameState.usageStats;
+                const selectedModelPricing = selectedModel?.pricing;
+                
+                if (!usageStats || !selectedModelPricing) return null;
+                
+                // Calculate actual costs based on real token usage
+                const promptPrice = parseFloat(selectedModelPricing.prompt) || 0;
+                const completionPrice = parseFloat(selectedModelPricing.completion) || 0;
+                
+                const promptCost = (usageStats.totalPromptTokens / 1000) * promptPrice;
+                const completionCost = (usageStats.totalCompletionTokens / 1000) * completionPrice;
+                const totalActualCost = promptCost + completionCost;
+                
+                // Calculate session duration
+                const sessionDuration = Date.now() - new Date(usageStats.sessionStartTime).getTime();
+                const sessionMinutes = sessionDuration / (1000 * 60);
+                const sessionHours = sessionMinutes / 60;
+                
+                // Calculate rates
+                const costPerMinute = sessionMinutes > 0 ? totalActualCost / sessionMinutes : 0;
+                const costPerHour = costPerMinute * 60;
+                const costPerRequest = usageStats.totalRequests > 0 ? totalActualCost / usageStats.totalRequests : 0;
+                
+                return (
+                  <div style={{ 
+                    marginTop: '6px',
+                    padding: '8px',
+                    background: 'rgba(34, 197, 94, 0.1)',
+                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                    borderRadius: '4px',
+                    fontSize: '10px'
+                  }}>
+                    <div style={{ 
+                      fontWeight: 'bold', 
+                      color: '#22c55e',
+                      marginBottom: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}>
+                      <span>💰 Real-time Costs</span>
+                                             <button
+                         onClick={() => {
+                           if (onResetUsageStats) {
+                             onResetUsageStats();
+                           }
+                         }}
+                        style={{
+                          background: 'rgba(34, 197, 94, 0.2)',
+                          border: '1px solid rgba(34, 197, 94, 0.5)',
+                          color: '#22c55e',
+                          padding: '2px 4px',
+                          borderRadius: '3px',
+                          fontSize: '8px',
+                          cursor: 'pointer'
+                        }}
+                        title="Reset usage statistics"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                    <div style={{ color: 'rgba(255,255,255,0.8)', lineHeight: '1.4' }}>
+                      <div style={{ marginBottom: '3px' }}>
+                        <strong>Session Total: ${totalActualCost.toFixed(4)}</strong>
+                      </div>
+                      <div>Tokens: {usageStats.totalPromptTokens.toLocaleString()} prompt + {usageStats.totalCompletionTokens.toLocaleString()} completion</div>
+                      <div>Requests: {usageStats.totalRequests}</div>
+                      <div>Per request: ${costPerRequest.toFixed(4)}</div>
+                      {sessionMinutes > 1 && (
+                        <>
+                          <div>Per minute: ${costPerMinute.toFixed(4)}</div>
+                          <div>Per hour: ${costPerHour.toFixed(3)}</div>
+                        </>
+                      )}
+                    </div>
+                    <div style={{ 
+                      fontSize: '9px', 
+                      color: 'rgba(255,255,255,0.6)',
+                      marginTop: '4px',
+                      fontStyle: 'italic'
+                    }}>
+                      {sessionHours > 0.1 ? 
+                        `Session: ${sessionHours.toFixed(1)}h` : 
+                        `Session: ${sessionMinutes.toFixed(1)}m`} • Real token usage
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           );
         })()}
@@ -473,102 +665,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         />
       </div>
 
-      {/* AI Thoughts Display */}
-      <div style={{
-        marginBottom: '16px',
-        padding: '12px',
-        background: 'rgba(34, 197, 94, 0.1)',
-        borderRadius: '8px',
-        border: '1px solid rgba(34, 197, 94, 0.3)',
-        minHeight: '80px',
-        maxHeight: '120px',
-        overflow: 'auto'
-      }}>
-        <div style={{ 
-          fontWeight: 'bold', 
-          marginBottom: '8px', 
-          color: '#22c55e',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          fontSize: '14px'
-        }}>
-          🧠 AI Thoughts
-        </div>
-                 {(() => {
-           // Extract recent AI analysis from logs
-           const recentLogs = gameState.logs.slice(-10); // Look at last 10 logs
-           
-           // Get the latest vision analysis
-           const latestVision = recentLogs
-             .filter(log => log.type === 'ai' && log.message.includes('👁️ AI sees:'))
-             .slice(-1)[0]?.message.replace('👁️ AI sees: ', '');
-           
-           // Get the latest thoughts  
-           const latestThought = recentLogs
-             .filter(log => log.type === 'ai' && log.message.includes('🧠 AI thinks:'))
-             .slice(-1)[0]?.message.replace('🧠 AI thinks: ', '');
-           
-           // Get the latest action
-           const latestAction = recentLogs
-             .filter(log => log.type === 'ai' && log.message.includes('🎮 Pressing'))
-             .slice(-1)[0]?.message;
-           
-           if (!latestVision && !latestThought && !latestAction) {
-             return (
-               <div style={{ 
-                 fontStyle: 'italic', 
-                 color: 'rgba(255,255,255,0.6)',
-                 fontSize: '12px'
-               }}>
-                 AI thoughts will appear here when the AI is playing...
-               </div>
-             );
-           }
-           
-           return (
-             <div style={{ fontSize: '11px', lineHeight: '1.4' }}>
-               {latestVision && (
-                 <div style={{ 
-                   marginBottom: '8px',
-                   color: '#60a5fa',
-                   padding: '6px 8px',
-                   background: 'rgba(96, 165, 250, 0.1)',
-                   borderRadius: '4px',
-                   borderLeft: '3px solid #60a5fa'
-                 }}>
-                   <strong>👁️ Sees:</strong> {latestVision}
-                 </div>
-               )}
-               
-               {latestThought && (
-                 <div style={{ 
-                   marginBottom: '8px',
-                   color: '#22c55e',
-                   padding: '6px 8px',
-                   background: 'rgba(34, 197, 94, 0.1)',
-                   borderRadius: '4px',
-                   borderLeft: '3px solid #22c55e'
-                 }}>
-                   <strong>🧠 Thinks:</strong> {latestThought}
-                 </div>
-               )}
-               
-               {latestAction && (
-                 <div style={{ 
-                   color: '#fbbf24',
-                   padding: '6px 8px',
-                   background: 'rgba(251, 191, 36, 0.1)',
-                   borderRadius: '4px',
-                   borderLeft: '3px solid #fbbf24'
-                 }}>
-                   <strong>{latestAction}</strong>
-                 </div>
-               )}
-             </div>
-           );
-         })()}
-      </div>
+
 
       {/* Game Status */}
       <div style={{

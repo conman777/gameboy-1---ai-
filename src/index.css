@@ -64,38 +64,39 @@ body {
 .controls-panel {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 24px;
-  margin: 20px 0;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .panel-title {
   color: white;
-  margin: 0 0 16px 0;
+  margin: 0 0 12px 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  font-size: 16px;
 }
 
 .form-label {
   color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: bold;
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .section {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .section-large {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .info-text {
-  font-size: 11px;
+  font-size: 10px;
   color: rgba(255, 255, 255, 0.6);
 }
 
@@ -112,21 +113,23 @@ body {
 }
 
 .button {
-  background: linear-gradient(145deg, #667eea, #764ba2);
-  border: none;
-  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(102, 126, 234, 0.9), rgba(118, 75, 162, 0.9));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
   color: white;
-  padding: 12px 24px;
-  font-size: 14px;
+  padding: 8px 16px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
 }
 
 .button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(145deg, #667eea, #764ba2);
 }
 
 .button:active {
@@ -141,13 +144,14 @@ body {
 
 .input-field {
   background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  padding: 12px 16px;
+  border-radius: 6px;
+  padding: 8px 12px;
   color: white;
-  font-size: 14px;
+  font-size: 12px;
   width: 100%;
-  margin: 8px 0;
+  margin: 6px 0;
 }
 
 .input-field::placeholder {
@@ -156,20 +160,21 @@ body {
 
 .input-field:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: rgba(102, 126, 234, 0.6);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .status-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 12px;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
 }
 
 .status-idle {
@@ -193,14 +198,17 @@ body {
 }
 
 .log-container {
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
-  padding: 16px;
-  max-height: 200px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 12px;
+  max-height: 150px;
   overflow-y: auto;
   font-family: 'Courier New', monospace;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 12px 0;
 }
 
 .log-entry {
@@ -228,9 +236,11 @@ body {
 
 /* Layout for single-viewport UI */
 .app-container {
-  height: 100vh;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow: hidden;
 }
 
 .layout-grid {
@@ -373,8 +383,8 @@ body {
 
 /* Ensure the GameBoy canvas scales correctly */
 #wasmboy-canvas {
-  width: 480px !important;
-  height: 360px !important;
+  width: 400px !important;
+  height: 300px !important;
   image-rendering: pixelated !important;
 }
 
@@ -467,6 +477,7 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .panel-header {
@@ -771,48 +782,49 @@ body {
   justify-content: center;
   align-items: center;
   width: 100%;
-  max-width: 600px;
+  max-width: 500px;
   margin: 0 auto;
   padding: 0;
+  height: 100%;
 }
 
 .gameboy-body {
   width: 100%;
-  aspect-ratio: 600 / 660;
+  aspect-ratio: 500 / 550;
   background: linear-gradient(145deg, #d4d4aa, #c8c896);
-  border-radius: 25px 25px 15px 15px;
+  border-radius: 20px 20px 12px 12px;
   box-shadow: 
-    inset 0 0 20px rgba(0,0,0,0.1),
-    0 15px 35px rgba(0,0,0,0.3),
-    0 5px 15px rgba(0,0,0,0.2);
-  border: 3px solid #a8a888;
+    inset 0 0 15px rgba(0,0,0,0.1),
+    0 12px 25px rgba(0,0,0,0.3),
+    0 4px 12px rgba(0,0,0,0.2);
+  border: 2px solid #a8a888;
   position: relative;
   font-family: 'Arial Black', Arial, sans-serif;
 }
 
 /* Top Branding Section */
 .gameboy-top {
-  padding: 25px 25px 15px 25px;
+  padding: 20px 20px 12px 20px;
   text-align: center;
 }
 
 .gameboy-logo {
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 .nintendo-logo {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: bold;
   color: #2c3e50;
-  margin-bottom: 5px;
-  letter-spacing: 2px;
+  margin-bottom: 4px;
+  letter-spacing: 1.5px;
 }
 
 .gameboy-text {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 900;
   color: #34495e;
-  letter-spacing: 3px;
+  letter-spacing: 2.5px;
   text-shadow: 
     1px 1px 0px #f8f8f0,
     2px 2px 0px rgba(0,0,0,0.1);
@@ -820,83 +832,83 @@ body {
 
 /* Screen Section */
 .gameboy-screen-section {
-  padding: 0 25px;
-  margin-bottom: 20px;
+  padding: 0 20px;
+  margin-bottom: 15px;
 }
 
 .screen-label {
-  font-size: 9px;
+  font-size: 8px;
   color: #2c3e50;
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-weight: bold;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
 }
 
 .screen-housing {
   background: linear-gradient(145deg, #2c3e50, #34495e);
-  border-radius: 15px;
-  padding: 12px;
+  border-radius: 12px;
+  padding: 10px;
   box-shadow: 
-    inset 0 0 15px rgba(0,0,0,0.5),
-    0 5px 15px rgba(0,0,0,0.3);
+    inset 0 0 12px rgba(0,0,0,0.5),
+    0 4px 12px rgba(0,0,0,0.3);
   position: relative;
 }
 
 .screen-bezel {
   background: linear-gradient(145deg, #1a252f, #2c3e50);
-  border-radius: 8px;
-  padding: 10px;
-  box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+  border-radius: 6px;
+  padding: 8px;
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
 }
 
 .screen-glass {
   background: linear-gradient(145deg, #0f4c3a, #1a5f4a);
-  border-radius: 4px;
-  padding: 6px;
+  border-radius: 3px;
+  padding: 5px;
   box-shadow: 
-    inset 0 0 8px rgba(0,0,0,0.6),
-    0 0 5px rgba(15, 76, 58, 0.5);
+    inset 0 0 6px rgba(0,0,0,0.6),
+    0 0 4px rgba(15, 76, 58, 0.5);
   position: relative;
   width: fit-content;
   margin: 0 auto;
 }
 
 .gameboy-lcd {
-  width: 480px !important;
-  height: 360px !important;
+  width: 400px !important;
+  height: 300px !important;
   max-width: 100%;
   max-height: 100%;
   image-rendering: pixelated !important;
   background: #8fa68a !important;
   border-radius: 2px;
   display: block;
-  box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.3);
 }
 
 /* Power LED */
 .power-section {
   position: absolute;
-  bottom: 15px;
-  right: 15px;
+  bottom: 12px;
+  right: 12px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .power-led {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   border: 1px solid #1a252f;
-  box-shadow: inset 0 0 3px rgba(0,0,0,0.5);
+  box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
 }
 
 .power-led.power-on {
   background: radial-gradient(circle, #ff4444, #cc0000);
   box-shadow: 
-    inset 0 0 3px rgba(0,0,0,0.5),
-    0 0 8px rgba(255, 68, 68, 0.6);
+    inset 0 0 2px rgba(0,0,0,0.5),
+    0 0 6px rgba(255, 68, 68, 0.6);
 }
 
 .power-led.power-off {
@@ -904,7 +916,7 @@ body {
 }
 
 .power-label {
-  font-size: 7px;
+  font-size: 6px;
   color: #bbb;
   font-weight: bold;
 }
@@ -912,34 +924,34 @@ body {
 /* Nintendo Branding */
 .nintendo-section {
   text-align: center;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
 }
 
 .nintendo-text {
-  font-size: 11px;
+  font-size: 10px;
   color: #2c3e50;
   font-weight: bold;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
 }
 
 /* Controls Section */
 .controls-section {
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   align-items: center;
-  padding: 0 80px;
-  margin-bottom: 30px;
+  padding: 0 25px 20px 25px;
+  gap: 30px;
 }
 
-/* D-Pad */
 .dpad-section {
-  position: relative;
+  flex: 1;
 }
 
 .dpad-container {
+  position: relative;
   width: 80px;
   height: 80px;
-  position: relative;
+  margin: 0 auto;
 }
 
 .dpad {
@@ -955,9 +967,9 @@ body {
   transform: translate(-50%, -50%);
   width: 25px;
   height: 25px;
-  background: linear-gradient(145deg, #2c3e50, #1a252f);
+  background: linear-gradient(145deg, #1a252f, #2c3e50);
   border-radius: 3px;
-  z-index: 5;
+  box-shadow: inset 0 0 3px rgba(0,0,0,0.8);
 }
 
 .dpad-up, .dpad-down {
@@ -965,12 +977,13 @@ body {
   left: 50%;
   transform: translateX(-50%);
   width: 25px;
-  height: 35px;
-  background: linear-gradient(145deg, #2c3e50, #1a252f);
-  border-radius: 3px;
+  height: 30px;
+  background: linear-gradient(145deg, #34495e, #2c3e50);
+  border: 1px solid #1a252f;
+  border-radius: 4px;
   box-shadow: 
-    0 3px 6px rgba(0,0,0,0.3),
-    inset 0 1px 1px rgba(255,255,255,0.1);
+    inset 0 1px 0 rgba(255,255,255,0.1),
+    0 2px 4px rgba(0,0,0,0.3);
 }
 
 .dpad-up {
@@ -985,13 +998,14 @@ body {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 35px;
+  width: 30px;
   height: 25px;
-  background: linear-gradient(145deg, #2c3e50, #1a252f);
-  border-radius: 3px;
+  background: linear-gradient(145deg, #34495e, #2c3e50);
+  border: 1px solid #1a252f;
+  border-radius: 4px;
   box-shadow: 
-    0 3px 6px rgba(0,0,0,0.3),
-    inset 0 1px 1px rgba(255,255,255,0.1);
+    inset 0 1px 0 rgba(255,255,255,0.1),
+    0 2px 4px rgba(0,0,0,0.3);
 }
 
 .dpad-left {
@@ -1004,122 +1018,120 @@ body {
 
 /* Action Buttons */
 .action-section {
-  position: relative;
+  flex: 1;
 }
 
 .action-buttons {
   display: flex;
   gap: 15px;
+  justify-content: center;
   align-items: center;
 }
 
 .button-a, .button-b {
-  width: 45px;
-  height: 45px;
+  width: 35px;
+  height: 35px;
   border-radius: 50%;
+  background: linear-gradient(145deg, #8b4b9c, #6a3a7c);
+  border: 2px solid #4a2a5c;
   box-shadow: 
-    0 4px 8px rgba(0,0,0,0.3),
-    inset 0 2px 4px rgba(255,255,255,0.2);
-  cursor: pointer;
+    inset 0 2px 0 rgba(255,255,255,0.2),
+    0 3px 6px rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.1s ease;
-  position: relative;
 }
 
 .button-a {
-  background: linear-gradient(145deg, #8e44ad, #6c3483);
+  margin-top: -8px;
 }
 
 .button-b {
-  background: linear-gradient(145deg, #e74c3c, #c0392b);
+  margin-top: 8px;
 }
 
 .button-face {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 16px;
-  font-weight: bold;
   color: white;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+  font-size: 12px;
+  font-weight: bold;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.5);
 }
 
 .button-a:active, .button-b:active {
-  transform: translateY(2px);
+  transform: translateY(1px);
   box-shadow: 
-    0 2px 4px rgba(0,0,0,0.3),
-    inset 0 2px 4px rgba(255,255,255,0.2);
+    inset 0 1px 0 rgba(255,255,255,0.2),
+    0 1px 3px rgba(0,0,0,0.4);
 }
 
-/* Start/Select Buttons */
+/* Start/Select Section */
 .start-select-section {
   display: flex;
   justify-content: center;
-  gap: 40px;
-  margin-bottom: 25px;
+  gap: 25px;
+  margin-bottom: 15px;
 }
 
 .small-button {
   position: relative;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .small-button-face {
-  width: 28px;
-  height: 12px;
+  width: 20px;
+  height: 6px;
   background: linear-gradient(145deg, #2c3e50, #1a252f);
-  border-radius: 6px;
+  border-radius: 8px;
   box-shadow: 
-    0 2px 4px rgba(0,0,0,0.3),
-    inset 0 1px 2px rgba(255,255,255,0.1);
-  cursor: pointer;
+    inset 0 1px 0 rgba(255,255,255,0.1),
+    0 1px 2px rgba(0,0,0,0.4);
+  margin-bottom: 4px;
   transition: all 0.1s ease;
-  margin: 0 auto 5px auto;
 }
 
 .small-button-face:active {
   transform: translateY(1px);
   box-shadow: 
-    0 1px 2px rgba(0,0,0,0.3),
-    inset 0 1px 2px rgba(255,255,255,0.1);
+    inset 0 0 0 rgba(255,255,255,0.1),
+    0 0 1px rgba(0,0,0,0.4);
 }
 
 .button-label {
-  font-size: 8px;
+  font-size: 7px;
   color: #2c3e50;
   font-weight: bold;
-  letter-spacing: 0.5px;
+  text-align: center;
 }
 
 /* Bottom Section */
 .gameboy-bottom {
-  padding: 0 25px 25px 25px;
+  padding: 0 20px 15px 20px;
 }
 
 .speaker-grille {
-  background: linear-gradient(145deg, #2c3e50, #34495e);
-  border-radius: 15px;
-  padding: 15px;
-  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
 }
 
 .speaker-holes {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
-  justify-items: center;
+  gap: 3px;
+  width: 120px;
 }
 
 .speaker-hole {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
   background: #1a252f;
   border-radius: 50%;
-  box-shadow: inset 0 0 3px rgba(0,0,0,0.8);
+  box-shadow: inset 0 0 1px rgba(0,0,0,0.8);
 }
 
-/* ROM Loader */
 .rom-loader {
   text-align: center;
 }
@@ -1127,16 +1139,16 @@ body {
 .rom-upload-label {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: linear-gradient(145deg, #e74c3c, #c0392b);
+  gap: 6px;
+  background: linear-gradient(145deg, #667eea, #764ba2);
   color: white;
+  padding: 8px 16px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 12px;
-  font-weight: bold;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.3);
   transition: all 0.2s ease;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
 }
 
 .rom-upload-label:hover {
@@ -1147,30 +1159,30 @@ body {
 /* Side Details */
 .gameboy-side-details {
   position: absolute;
-  right: -8px;
-  top: 120px;
+  right: -6px;
+  top: 100px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 15px;
 }
 
 .volume-slider {
-  width: 4px;
-  height: 40px;
+  width: 3px;
+  height: 30px;
   background: linear-gradient(to bottom, #2c3e50, #1a252f);
-  border-radius: 2px;
-  box-shadow: inset 0 0 3px rgba(0,0,0,0.5);
+  border-radius: 1.5px;
+  box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
 }
 
 .headphone-jack {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   background: #1a252f;
   border-radius: 50%;
-  box-shadow: inset 0 0 3px rgba(0,0,0,0.8);
+  box-shadow: inset 0 0 2px rgba(0,0,0,0.8);
 }
 
-/* Responsive adjustments */
+/* Mobile responsive adjustments */
 @media (max-width: 768px) {
   .gameboy-dmg {
     max-width: 400px;
@@ -1195,29 +1207,31 @@ body {
 .app-container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow: hidden;
 }
 
 .app-header {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 16px 24px;
+  padding: 12px 20px;
+  flex-shrink: 0;
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 1200px;
+  max-width: 1800px;
   margin: 0 auto;
 }
 
 .app-title {
   color: white;
   margin: 0;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
 }
 
@@ -1226,21 +1240,22 @@ body {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 0 24px;
+  padding: 0 20px;
   gap: 2px;
+  flex-shrink: 0;
 }
 
 .tab-button {
   background: none;
   border: none;
   color: rgba(255, 255, 255, 0.7);
-  padding: 16px 20px;
+  padding: 12px 16px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 6px;
+  font-size: 13px;
   font-weight: 500;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
@@ -1256,82 +1271,88 @@ body {
 .tab-button.active {
   background: rgba(255, 255, 255, 0.15);
   color: white;
-  border-bottom: 3px solid #667eea;
+  border-bottom: 2px solid #667eea;
 }
 
 .tab-shortcut {
-  font-size: 11px;
+  font-size: 10px;
   opacity: 0.6;
   margin-left: 4px;
 }
 
 .tab-content {
   flex: 1;
-  padding: 24px;
-  max-width: 1200px;
+  overflow: hidden;
+  padding: 12px 20px;
+  max-width: 1800px;
   margin: 0 auto;
   width: 100%;
 }
 
 .tab-panel {
-  max-width: 1200px;
-  margin: 0 auto;
+  height: 100%;
+  overflow: hidden;
 }
 
-/* Combined Game & AI Control Layout */
 .game-layout {
   display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: 24px;
-  align-items: start;
+  grid-template-columns: 1fr 300px 400px;
+  gap: 16px;
+  height: 100%;
+  max-height: calc(100vh - 120px);
 }
 
 .game-section {
   display: flex;
   justify-content: center;
+  align-items: center;
+  overflow: hidden;
 }
 
 .control-section {
-  /* Control panel styling handled by existing .controls-panel class */
+  overflow-y: auto;
+  max-height: 100%;
 }
 
 .quick-actions {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 16px 24px;
+  border-radius: 12px;
+  padding: 12px;
+  margin: 0 0 16px 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .action-group {
   display: flex;
-  gap: 12px;
+  gap: 6px;
   align-items: center;
 }
 
 .action-button {
-  background: linear-gradient(145deg, #667eea, #764ba2);
-  border: none;
-  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(102, 126, 234, 0.9), rgba(118, 75, 162, 0.9));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
   color: white;
-  padding: 10px 16px;
-  font-size: 13px;
+  padding: 6px 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .action-button:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(145deg, #667eea, #764ba2);
 }
 
 .action-button:disabled {
@@ -1349,107 +1370,211 @@ body {
 }
 
 .memory-display {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 8px;
+  margin: 8px 0;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
+}
+
+.memory-content {
+  flex: 1;
 }
 
 .memory-label {
-  font-weight: 600;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.memory-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .memory-item {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
   background: rgba(255, 255, 255, 0.1);
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-family: monospace;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .memory-clear {
-  background: rgba(255, 107, 107, 0.2);
-  border: 1px solid rgba(255, 107, 107, 0.3);
+  background: rgba(239, 68, 68, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 4px 8px;
   border-radius: 4px;
-  color: #ff6b6b;
-  padding: 4px 6px;
-  font-size: 12px;
+  font-size: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .memory-clear:hover {
-  background: rgba(255, 107, 107, 0.3);
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
 }
 
 .controls-hint {
-  font-size: 11px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 8px;
+  margin: 8px 0;
+  font-size: 10px;
   color: rgba(255, 255, 255, 0.6);
-  text-align: center;
-  font-family: monospace;
 }
 
-/* Mobile responsive for new tabbed layout */
+.controls-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.controls-row:last-child {
+  margin-bottom: 0;
+}
+
+.controls-row span {
+  font-family: 'Courier New', monospace;
+}
+
+/* Mobile responsive adjustments for Full HD optimization */
 @media (max-width: 768px) {
   .app-header {
-    padding: 12px 16px;
+    padding: 8px 16px;
   }
-  
+
   .app-title {
-    font-size: 20px;
+    font-size: 18px;
   }
-  
+
   .tab-nav {
     padding: 0 16px;
-    overflow-x: auto;
   }
-  
+
   .tab-button {
-    padding: 12px 16px;
-    font-size: 13px;
-    white-space: nowrap;
+    padding: 10px 12px;
+    font-size: 12px;
   }
-  
+
   .tab-shortcut {
     display: none;
   }
-  
+
   .tab-content {
-    padding: 16px;
+    padding: 8px 16px;
   }
-  
+
   .quick-actions {
-    padding: 12px 16px;
-    flex-direction: column;
-    gap: 12px;
+    margin: 0 0 12px 0;
   }
-  
+
   .action-group {
-    justify-content: center;
-    width: 100%;
+    flex-wrap: wrap;
   }
-  
+
   .memory-display {
-    justify-content: center;
-    width: 100%;
-  }
-  
-  .controls-hint {
     font-size: 10px;
   }
-  
-  /* Mobile responsive for combined layout */
+
+  .controls-hint {
+    font-size: 9px;
+  }
+
   .game-layout {
     grid-template-columns: 1fr;
-    gap: 16px;
+    grid-template-rows: auto auto auto;
+    gap: 12px;
+    max-height: none;
   }
-  
+
   .game-section {
     order: 1;
   }
-  
-  .control-section {
+
+  .thoughts-section {
     order: 2;
+    max-height: none;
+    overflow-y: visible;
   }
+
+  .control-section {
+    order: 3;
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+.thoughts-section {
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.ai-thoughts-display {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 12px;
+  min-height: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.thoughts-empty {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  text-align: center;
+  padding: 20px;
+}
+
+.thoughts-content {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.thought-item {
+  margin-bottom: 12px;
+  padding: 8px;
+  border-radius: 4px;
+  border-left: 3px solid;
+}
+
+.thought-item:last-child {
+  margin-bottom: 0;
+}
+
+.thought-vision {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+  border-left-color: #60a5fa;
+}
+
+.thought-reasoning {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  border-left-color: #22c55e;
+}
+
+.thought-action {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  border-left-color: #fbbf24;
 }
 

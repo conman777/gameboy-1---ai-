@@ -5,6 +5,7 @@ import AIController, { AIControllerRef } from './components/AIController';
 import ControlPanel from './components/ControlPanel';
 import SettingsPanel from './components/SettingsPanel';
 import GameLog from './components/GameLog';
+import GameBoyControls from './components/GameBoyControls';
 import { useGameStore, type GameState, type AIConfig } from './store/gameStore';
 import { useButtonMemoryStore } from './store/buttonMemoryStore';
 import { useRomMemoryStore } from './store/romMemoryStore';
@@ -22,6 +23,7 @@ function App() {
     logs,
     isMuted,
     aiConfig,
+    usageStats,
     loadGame,
     togglePlayPause,
     stopGame,
@@ -29,7 +31,9 @@ function App() {
     addLog,
     clearLogs,
     updateAIConfig,
-    setAIStatus
+    setAIStatus,
+    updateUsageStats,
+    resetUsageStats
   } = useGameStore();
 
   const { successCounts, clearMemory, loadFromRomMemory } = useButtonMemoryStore();
@@ -62,6 +66,25 @@ function App() {
       addLog('info', `Cleared memory for ROM: ${currentRomId.substring(0, 8)}...`);
     } else {
       addLog('info', 'Cleared session memory');
+    }
+  };
+
+  const handleTokenUsage = (promptTokens: number, completionTokens: number, model: string) => {
+    // This function will be implemented to calculate costs based on model pricing
+    // For now, we'll just track tokens and calculate cost later in the UI
+    updateUsageStats(promptTokens, completionTokens, 0); // Cost will be calculated in ControlPanel
+  };
+
+  const handleManualButtonPress = (button: string) => {
+    if (emulatorRef.current && !aiEnabled) {
+      addLog('user', `🎮 Manual button press: ${button}`);
+      emulatorRef.current.pressButton(button);
+    }
+  };
+
+  const handleManualButtonRelease = (button: string) => {
+    if (emulatorRef.current && !aiEnabled) {
+      emulatorRef.current.releaseButton(button);
     }
   };
 
@@ -170,12 +193,85 @@ function App() {
                 />
               </div>
               
+              {/* AI Thoughts Section */}
+              <div className="thoughts-section">
+                <div className="controls-panel">
+                  <h3 className="panel-title">
+                    🧠 AI Thoughts
+                  </h3>
+                  <div className="ai-thoughts-display">
+                    {(() => {
+                      // Extract recent AI analysis from logs
+                      const recentLogs = logs.slice(-10); // Look at last 10 logs
+                      
+                      // Get the latest vision analysis
+                      const latestVision = recentLogs
+                        .filter(log => log.type === 'ai' && log.message.includes('👁️ AI sees:'))
+                        .slice(-1)[0]?.message.replace('👁️ AI sees: ', '');
+                      
+                      // Get the latest thoughts  
+                      const latestThought = recentLogs
+                        .filter(log => log.type === 'ai' && log.message.includes('🧠 AI thinks:'))
+                        .slice(-1)[0]?.message.replace('🧠 AI thinks: ', '');
+                      
+                      // Get the latest action
+                      const latestAction = recentLogs
+                        .filter(log => log.type === 'ai' && log.message.includes('🎮 Pressing'))
+                        .slice(-1)[0]?.message;
+                      
+                      if (!latestVision && !latestThought && !latestAction) {
+                        return (
+                          <div className="thoughts-empty">
+                            AI thoughts will appear here when the AI is playing...
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div className="thoughts-content">
+                          {latestVision && (
+                            <div className="thought-item thought-vision">
+                              <strong>👁️ Sees:</strong> {latestVision}
+                            </div>
+                          )}
+                          
+                          {latestThought && (
+                            <div className="thought-item thought-reasoning">
+                              <strong>🧠 Thinks:</strong> {latestThought}
+                            </div>
+                          )}
+                          
+                          {latestAction && (
+                            <div className="thought-item thought-action">
+                              <strong>{latestAction}</strong>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+              
               {/* AI Control Panel */}
               <div className="control-section">
                 <ControlPanel
                   aiConfig={aiConfig}
                   onConfigChange={handleAIConfigChange}
-                  gameState={{ isPlaying, aiEnabled, currentGame, gameData, currentRomId, aiStatus, logs, isMuted, aiConfig }}
+                  gameState={{ isPlaying, aiEnabled, currentGame, gameData, currentRomId, aiStatus, logs, isMuted, aiConfig, usageStats }}
+                  successCounts={successCounts}
+                  onToggleAI={toggleAI}
+                  onTogglePlayPause={togglePlayPause}
+                  onStopGame={stopGame}
+                  onClearMemory={handleClearMemory}
+                  onResetUsageStats={resetUsageStats}
+                />
+                
+                {/* Manual GameBoy Controls */}
+                <GameBoyControls
+                  onButtonPress={handleManualButtonPress}
+                  onButtonRelease={handleManualButtonRelease}
+                  disabled={aiEnabled}
                 />
               </div>
             </div>
@@ -201,69 +297,14 @@ function App() {
         )}
       </main>
 
-      {/* Quick Action Bar (always visible) */}
-      <footer className="quick-actions">
-        <div className="action-group">
-          <button 
-            className={`action-button ${aiEnabled ? 'ai-active' : 'ai-inactive'}`}
-            onClick={toggleAI}
-            title="Toggle AI (Ctrl+A)"
-          >
-            🚀 {aiEnabled ? 'STOP AI' : 'START AI'}
-          </button>
-          <button 
-            className="action-button"
-            onClick={togglePlayPause}
-            disabled={!currentGame}
-            title="Play/Pause (Space)"
-          >
-            {isPlaying ? '⏸' : '▶'} {isPlaying ? 'PAUSE' : 'PLAY'}
-          </button>
-          <button 
-            className="action-button"
-            onClick={stopGame}
-            disabled={!currentGame}
-            title="Stop Game (Escape)"
-          >
-            ⏹ STOP
-          </button>
-        </div>
-
-        <div className="memory-display">
-          <span className="memory-label">Memory:</span>
-          {Object.entries(successCounts).length > 0 ? (
-            Object.entries(successCounts)
-              .sort(([,a], [,b]) => b - a)
-              .slice(0, 3)
-              .map(([button, count]) => (
-                <span key={button} className="memory-item">
-                  {button}: {count}
-                </span>
-              ))
-          ) : (
-            <span className="memory-item">No data</span>
-          )}
-          <button 
-            className="memory-clear" 
-            onClick={handleClearMemory}
-            title="Clear Memory for Current ROM"
-          >
-            🗑️
-          </button>
-        </div>
-
-        <div className="controls-hint">
-          Arrow Keys = D-Pad • Z = A • X = B • Enter = Start
-        </div>
-      </footer>
-
       {/* Hidden AI Controller */}
       <AIController
         ref={aiControllerRef}
         config={aiConfig}
-        gameState={{ isPlaying, aiEnabled, currentGame, gameData, currentRomId, aiStatus, logs, isMuted, aiConfig }}
+        gameState={{ isPlaying, aiEnabled, currentGame, gameData, currentRomId, aiStatus, logs, isMuted, aiConfig, usageStats }}
         onStatusChange={handleAIStatusChange}
         onLog={addLog}
+        onTokenUsage={handleTokenUsage}
         emulatorRef={emulatorRef}
       />
     </div>
