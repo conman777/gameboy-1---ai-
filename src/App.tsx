@@ -9,6 +9,7 @@ import GameBoyControls from './components/GameBoyControls';
 import { useGameStore, type GameState, type AIConfig } from './store/gameStore';
 import { useButtonMemoryStore } from './store/buttonMemoryStore';
 import { useRomMemoryStore } from './store/romMemoryStore';
+import KnowledgeBase from './components/KnowledgeBase';
 
 function App() {
   const [activeTab, setActiveTab] = useState<'game' | 'settings' | 'log'>('game');
@@ -70,9 +71,13 @@ function App() {
   };
 
   const handleTokenUsage = (promptTokens: number, completionTokens: number, model: string) => {
-    // This function will be implemented to calculate costs based on model pricing
-    // For now, we'll just track tokens and calculate cost later in the UI
-    updateUsageStats(promptTokens, completionTokens, 0); // Cost will be calculated in ControlPanel
+    // Calculate actual cost based on current model pricing
+    // We need to get the model pricing from the same source as ControlPanel
+    const { aiConfig } = useGameStore.getState();
+    
+    // For now, we'll still pass 0 and let ControlPanel calculate it properly
+    // This ensures the cost calculation is consistent and uses the latest pricing data
+    updateUsageStats(promptTokens, completionTokens, 0);
   };
 
   const handleManualButtonPress = (button: string) => {
@@ -251,6 +256,9 @@ function App() {
                     })()}
                   </div>
                 </div>
+               
+                {/* Knowledge Base under AI thoughts */}
+                <KnowledgeBase romId={currentRomId} />
               </div>
               
               {/* AI Control Panel */}

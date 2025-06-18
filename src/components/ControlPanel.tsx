@@ -512,11 +512,54 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                 const usageStats = gameState.usageStats;
                 const selectedModelPricing = selectedModel?.pricing;
                 
-                if (!usageStats || !selectedModelPricing) return null;
+                if (!usageStats) return null;
+                
+                // Show a message if pricing data is not available
+                if (!selectedModelPricing) {
+                  return (
+                    <div style={{ 
+                      marginTop: '6px',
+                      padding: '8px',
+                      background: 'rgba(255, 107, 107, 0.1)',
+                      border: '1px solid rgba(255, 107, 107, 0.3)',
+                      borderRadius: '4px',
+                      fontSize: '10px'
+                    }}>
+                      <div style={{ 
+                        fontWeight: 'bold', 
+                        color: '#ff6b6b',
+                        marginBottom: '4px'
+                      }}>
+                        ⚠️ Cost Tracking Unavailable
+                      </div>
+                      <div style={{ color: 'rgba(255,255,255,0.8)' }}>
+                        Pricing data not available for model: {aiConfig.model}
+                      </div>
+                      <div style={{ 
+                        fontSize: '9px', 
+                        color: 'rgba(255,255,255,0.6)',
+                        marginTop: '4px',
+                        fontStyle: 'italic'
+                      }}>
+                        Tokens are still being tracked: {usageStats.totalPromptTokens.toLocaleString()} prompt + {usageStats.totalCompletionTokens.toLocaleString()} completion
+                      </div>
+                    </div>
+                  );
+                }
                 
                 // Calculate actual costs based on real token usage
                 const promptPrice = parseFloat(selectedModelPricing.prompt) || 0;
                 const completionPrice = parseFloat(selectedModelPricing.completion) || 0;
+                
+                // Debug logging to understand why costs might be 0
+                console.log('Cost Calculation Debug:', {
+                  selectedModel: selectedModel?.id,
+                  selectedModelPricing,
+                  promptPrice,
+                  completionPrice,
+                  totalPromptTokens: usageStats.totalPromptTokens,
+                  totalCompletionTokens: usageStats.totalCompletionTokens
+                });
                 
                 const promptCost = (usageStats.totalPromptTokens / 1000) * promptPrice;
                 const completionCost = (usageStats.totalCompletionTokens / 1000) * completionPrice;
@@ -573,6 +616,11 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                     <div style={{ color: 'rgba(255,255,255,0.8)', lineHeight: '1.4' }}>
                       <div style={{ marginBottom: '3px' }}>
                         <strong>Session Total: ${totalActualCost.toFixed(4)}</strong>
+                        {totalActualCost === 0 && usageStats.totalRequests > 0 && (
+                          <span style={{ color: '#ff6b6b', marginLeft: '8px', fontSize: '9px' }}>
+                            (Check console for debug info)
+                          </span>
+                        )}
                       </div>
                       <div>Tokens: {usageStats.totalPromptTokens.toLocaleString()} prompt + {usageStats.totalCompletionTokens.toLocaleString()} completion</div>
                       <div>Requests: {usageStats.totalRequests}</div>

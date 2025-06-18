@@ -2,7 +2,8 @@ import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import axios from 'axios';
 import { AIConfig, GameState, LogEntry } from '../store/gameStore';
 import { GameBoyEmulatorRef } from './GameBoyEmulator'; // Import GameBoyEmulatorRef
-import { useButtonMemoryStore, summarizeButtonStats } from '../store/buttonMemoryStore';
+import { useButtonMemoryStore } from '../store/buttonMemoryStore';
+import { useActionMemoryStore } from '../store/actionMemoryStore';
 
 interface AIControllerProps {
   config: AIConfig;
@@ -27,13 +28,24 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
     const lastDecisionRef = useRef<string | null>(null);
     const decisionCountRef = useRef<{ [key: string]: number }>({});
     const recordButtonSuccess = useButtonMemoryStore(state => state.recordSuccess);
+    const {
+      addAction: addActionRecord,
+      loadActions: loadActionHistory,
+    } = useActionMemoryStore();
     
     // Rate limiting state
     const lastRequestTimeRef = useRef<number>(Date.now() - 5000); // Initialize to 5 seconds ago
-    const requestDelayRef = useRef<number>(2000); // Start with 2 second delay
+    const requestDelayRef = useRef<number>(3000); // Start with 3 second delay for vision models
     const consecutiveErrorsRef = useRef<number>(0);
+    const isRetryingRef = useRef<boolean>(false);
+    const maxRetries = 3;
+    const visionFailureCount = useRef<number>(0);
+    const maxVisionFailures = 2; // After 2 vision failures, temporarily use text mode
   
-
+    const gameStateRef = React.useRef(gameState);
+    const configRef = React.useRef(config);
+    React.useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
+    React.useEffect(() => { configRef.current = config; }, [config]);
 
     useImperativeHandle(ref, () => ({
       startPlaying: () => {
@@ -41,14 +53,19 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
         // console.log('Config:', { hasApiKey: !!config.apiKey, model: config.model });
         // console.log('GameState:', { currentGame: gameState.currentGame, isPlaying: gameState.isPlaying, aiEnabled: gameState.aiEnabled });
         
-        if (!config.apiKey) {
+        if (!configRef.current.apiKey) {
           onLog('error', 'OpenRouter API key is required');
           return;
         }
         
-        if (!gameState.currentGame) {
+        if (!gameStateRef.current.currentGame) {
           onLog('error', 'No game loaded');
           return;
+        }
+
+        // Ensure the persistent knowledge base for this ROM is loaded
+        if (gameStateRef.current.currentRomId) {
+          loadActionHistory(gameStateRef.current.currentRomId);
         }
 
         startAILoop();
@@ -107,7 +124,7 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
 
       // Start the AI decision loop with async function
       const aiLoop = async () => {
-        while (isPlayingRef.current && gameState.aiEnabled && gameState.isPlaying) {
+        while (isPlayingRef.current && gameStateRef.current.aiEnabled && gameStateRef.current.isPlaying) {
           // console.log('AIController: AI loop tick');
           
           if (!isPlayingRef.current) {
@@ -115,22 +132,22 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
             break;
           }
           
-          if (!gameState.aiEnabled) {
+          if (!gameStateRef.current.aiEnabled) {
             // console.log('AIController: Stopping - AI not enabled in game state');
             break;
           }
           
-          if (!gameState.isPlaying) {
+          if (!gameStateRef.current.isPlaying) {
             // console.log('AIController: Stopping - Game not playing');
             break;
           }
           
-          if (!config.apiKey) {
+          if (!configRef.current.apiKey) {
             // console.log('AIController: Stopping - No API key');
             break;
           }
           
-          if (!gameState.currentGame) {
+          if (!gameStateRef.current.currentGame) {
             // console.log('AIController: Stopping - No game loaded');
             break;
           }
@@ -216,7 +233,8 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
         const base64Image = await convertScreenDataToBase64(screenData);
         console.log('AIController: Converted to base64, length:', base64Image.length);
         
-        const decision = await getAIDecisionWithVision(base64Image);
+        const decisionOutcome = await getAIDecisionWithVision(base64Image);
+        const { button: decision, observation, reasoning, fullResponse } = decisionOutcome;
         console.log('AIController: AI decision result:', decision);
         
         // Update last request time after successful decision
@@ -248,6 +266,26 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
               } else {
                 onLog('ai', `⚠️ Button ${decision} did not change screen`);
               }
+
+              // Persist action record in knowledge base
+              try {
+                const beforeBase64 = await convertScreenDataToBase64(screenBefore);
+                const afterBase64 = await convertScreenDataToBase64(screenAfter);
+                await addActionRecord({
+                  romId: gameStateRef.current.currentRomId ?? 'unknown',
+                  timestamp: Date.now(),
+                  button: decision,
+                  beforeImage: beforeBase64,
+                  afterImage: afterBase64,
+                  pixelDiff: pixelsDifferent,
+                  success,
+                  observation,
+                  reasoning,
+                  fullResponse,
+                });
+              } catch (err) {
+                console.error('Failed to save action record:', err);
+              }
             } else {
               onLog('ai', `⚠️ Unable to evaluate ${decision} effect`);
             }
@@ -271,14 +309,44 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
         } else {
           onLog('error', `AI error: ${error instanceof Error ? error.message : 'Unknown error'}`);
           
-          // If we have too many consecutive errors, increase delay significantly
-          consecutiveErrorsRef.current += 1;
-          if (consecutiveErrorsRef.current >= 3) {
-            requestDelayRef.current = Math.min(requestDelayRef.current * 2, 30000);
-            onLog('info', `Multiple errors detected, increasing delay to ${requestDelayRef.current}ms`);
+          // For non-rate-limit errors, only stop AI after multiple consecutive failures
+          if (!(error instanceof Error && error.message?.includes('Rate limit exceeded'))) {
+            consecutiveErrorsRef.current += 1;
+            if (consecutiveErrorsRef.current >= 5) {
+              onLog('error', `🛑 Multiple API failures (${consecutiveErrorsRef.current}). Stopping AI to prevent spam.`);
+              stopAILoop();
+              return;
+            }
+          } else {
+            // Rate limit error - don't stop AI, just wait longer
+            onLog('ai', `⏳ Rate limit hit - AI will continue with longer delays...`);
+            onStatusChange('thinking'); // Reset status to show AI is still thinking
           }
         }
       }
+    };
+
+    /*
+     * Helper that converts the persisted Knowledge-Base into a concise string
+     * like: "A 3/5, B 1/4, START 4/4" where each value is successes / attempts.
+     * The LLM can then reason about which buttons are historically effective.
+     */
+    const summarizeActionStats = (): string => {
+      const { actions } = useActionMemoryStore.getState();
+      if (!actions || actions.length === 0) return 'No data yet';
+
+      const stats: Record<string, { success: number; total: number }> = {};
+      actions.forEach(a => {
+        if (!stats[a.button]) {
+          stats[a.button] = { success: 0, total: 0 };
+        }
+        stats[a.button].total += 1;
+        if (a.success) stats[a.button].success += 1;
+      });
+
+      return Object.entries(stats)
+        .map(([btn, { success, total }]) => `${btn}: ${success}/${total}`)
+        .join(', ');
     };
 
     const convertScreenDataToBase64 = async (screenData: ImageData): Promise<string> => {
@@ -293,15 +361,100 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
         // Put the image data on the canvas
         ctx.putImageData(screenData, 0, 0);
         
-        // Convert to base64 (remove the data:image/png;base64, prefix)
-        const base64 = canvas.toDataURL('image/png').split(',')[1];
+        // Convert to base64 with compression for vision models (JPEG with reduced quality)
+        const base64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1]; // 70% quality for smaller payload
         resolve(base64);
       });
     };
 
-    const getAIDecisionWithVision = async (base64ImageArg?: string): Promise<string | null> => { // Renamed to avoid conflict
+    const makeAPIRequestWithRetry = async (messages: any[], retryCount = 0): Promise<any> => {
       try {
-        const gameTitle = gameState.currentGame || 'Unknown Game';
+        console.log(`AIController: Making API request (attempt ${retryCount + 1}/${maxRetries + 1})`);
+        
+        const response = await axios.post(
+          'https://openrouter.ai/api/v1/chat/completions',
+          {
+            model: configRef.current.model,
+            messages: messages,
+            temperature: configRef.current.temperature,
+            max_tokens: configRef.current.maxTokens
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${configRef.current.apiKey}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': window.location.origin,
+              'X-Title': 'GameBoy AI Player'
+            }
+          }
+        );
+        
+        // Successful request - reset error count and gradually reduce delay
+        consecutiveErrorsRef.current = 0;
+        visionFailureCount.current = 0; // Reset vision failure count on success
+        onStatusChange('thinking'); // Reset status after successful request
+        if (requestDelayRef.current > 3000) {
+          requestDelayRef.current = Math.max(3000, requestDelayRef.current * 0.9); // Gradually reduce delay
+          onLog('ai', `✅ Request successful, reduced delay to ${requestDelayRef.current}ms`);
+        }
+        
+        return response;
+        
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 429) {
+          consecutiveErrorsRef.current += 1;
+          
+          // Track vision model failures specifically
+          if (configRef.current.model.includes('claude') || configRef.current.model.includes('gpt-4') || configRef.current.model.includes('gemini') || configRef.current.model.includes('vision')) {
+            visionFailureCount.current += 1;
+            onLog('ai', `📊 Vision model rate limit count: ${visionFailureCount.current}/${maxVisionFailures}`);
+          }
+          
+          if (retryCount < maxRetries) {
+            // Calculate exponential backoff delay
+            const baseDelay = 5000; // 5 seconds base
+            const exponentialDelay = baseDelay * Math.pow(2, retryCount); // 5s, 10s, 20s
+            const jitter = Math.random() * 1000; // Add jitter to avoid thundering herd
+            const retryDelay = exponentialDelay + jitter;
+            
+            onLog('ai', `🚦 Rate limit hit (attempt ${retryCount + 1}). Retrying in ${Math.round(retryDelay/1000)}s...`);
+            console.log(`AIController: Rate limit - waiting ${retryDelay}ms before retry ${retryCount + 1}`);
+            
+            // Set status to indicate we're waiting for rate limit
+            onStatusChange('error'); // Temporarily show error status during retry wait
+            
+            // Also increase the global request delay for future requests
+            const oldDelay = requestDelayRef.current;
+            const newDelay = Math.min(oldDelay * 1.5, 15000); // Cap at 15 seconds
+            requestDelayRef.current = newDelay;
+            
+            if (newDelay > oldDelay) {
+              onLog('ai', `⏳ Increased global delay to ${newDelay}ms to prevent future rate limits`);
+            }
+            
+            // Wait with exponential backoff, then retry
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            return makeAPIRequestWithRetry(messages, retryCount + 1);
+          } else {
+            // Max retries reached
+            const finalDelay = Math.min(requestDelayRef.current * 3, 60000); // More aggressive delay increase, cap at 1 minute
+            requestDelayRef.current = finalDelay;
+            onLog('error', `🚫 Max retries (${maxRetries}) reached. Increasing delay to ${Math.round(finalDelay/1000)}s before next decision.`);
+            onLog('ai', `💤 Entering longer cooldown period due to persistent rate limits...`);
+            throw new Error(`Rate limit exceeded after ${maxRetries} retries`);
+          }
+        } else if (axios.isAxiosError(error) && error.response?.status === 401) {
+          throw new Error('Invalid API key');
+        } else {
+          const errorMsg = axios.isAxiosError(error) ? `${error.response?.status || 'Unknown'}` : 'Unknown';
+          throw new Error(`API error: ${errorMsg}`);
+        }
+      }
+    };
+
+    const getAIDecisionWithVision = async (base64ImageArg?: string): Promise<{ button: string | null; observation?: string; reasoning?: string; fullResponse?: string }> => { // Returns detailed info
+      try {
+        const gameTitle = gameStateRef.current.currentGame || 'Unknown Game';
         
         // Track decision frequency to avoid repetition
         const lastDecision = lastDecisionRef.current;
@@ -325,17 +478,26 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
           decisionCountRef.current = {};
         }
 
-        const isVisionModel = config.model.includes('claude') || 
-                             config.model.includes('gpt-4') || 
-                             config.model.includes('gemini') ||
-                             config.model.includes('vision');
+        const isVisionModel = configRef.current.model.includes('claude') || 
+                             configRef.current.model.includes('gpt-4') || 
+                             configRef.current.model.includes('gemini') ||
+                             configRef.current.model.includes('vision');
+
+        // Temporarily disable vision if we've had too many vision-related rate limit failures
+        const useVision = isVisionModel && visionFailureCount.current < maxVisionFailures;
+        
+        if (isVisionModel && !useVision) {
+          onLog('ai', `🔄 Temporarily using text-only analysis due to vision model rate limits...`);
+        }
 
         let messages: any[];
+        let observation: string | undefined;
+        let reasoning: string | undefined;
         
-        if (isVisionModel && base64ImageArg) { // Ensure base64ImageArg is present for vision
+        if (useVision && base64ImageArg) { // Ensure base64ImageArg is present for vision
           // console.log('AIController: Using vision-based AI analysis');
           // if (base64ImageArg) { console.log('AIController: Image size:', base64ImageArg.length, 'characters'); }
-          onLog('ai', `AI is analyzing the game screen visually with ${config.model}...`);
+          onLog('ai', `AI is analyzing the game screen visually with ${configRef.current.model}...`);
           
           let avoidanceText = '';
           if (shouldAvoidLastDecision) {
@@ -406,12 +568,12 @@ Look at the game screen and determine what button will advance past the current 
           ];
           messages.unshift({
             role: 'system',
-            content: `Previous button results: ${summarizeButtonStats()}`
+            content: `Historical button efficacy (success/attempts): ${summarizeActionStats()}`
           });
         } else {
           // Fallback to text-based analysis for non-vision models (or if base64ImageArg is missing)
           // console.log('AIController: Using text-based analysis');
-          onLog('ai', `AI is analyzing the game screen (text-based) with ${config.model}...`);
+          onLog('ai', `AI is analyzing the game screen (text-based) with ${configRef.current.model}...`);
           
           const screenAnalysis = analyzeScreenForTextModel();
           
@@ -441,43 +603,20 @@ Respond with your reasoning and decision.`
           ];
           messages.unshift({
             role: 'system',
-            content: `Previous button results: ${summarizeButtonStats()}`
+            content: `Historical button efficacy (success/attempts): ${summarizeActionStats()}`
           });
         }
 
         console.log('AIController: Sending request to OpenRouter API...');
-        console.log('AIController: Using model:', config.model);
-        console.log('AIController: API Key present:', !!config.apiKey);
+        console.log('AIController: Using model:', configRef.current.model);
+        console.log('AIController: API Key present:', !!configRef.current.apiKey);
         console.log('AIController: Is vision model:', isVisionModel);
         
-        const response = await axios.post(
-          'https://openrouter.ai/api/v1/chat/completions',
-          {
-            model: config.model,
-            messages: messages,
-            temperature: config.temperature,
-            max_tokens: config.maxTokens
-          },
-          {
-            headers: {
-              'Authorization': `Bearer ${config.apiKey}`,
-              'Content-Type': 'application/json',
-              'HTTP-Referer': window.location.origin,
-              'X-Title': 'GameBoy AI Player'
-            }
-          }
-        );
+        const response = await makeAPIRequestWithRetry(messages);
 
         const fullResponse = response.data.choices[0]?.message?.content?.trim();
         console.log('AIController: Full AI response:', fullResponse);
         console.log('AIController: Response data:', response.data);
-        
-        // Successful request - reset error count and gradually reduce delay
-        consecutiveErrorsRef.current = 0;
-        if (requestDelayRef.current > 2000) {
-          requestDelayRef.current = Math.max(2000, requestDelayRef.current * 0.8); // Gradually reduce delay
-          onLog('ai', `✅ Request successful, reduced delay to ${requestDelayRef.current}ms`);
-        }
         
         // Track real-time token usage and costs
         const usage = response.data.usage;
@@ -491,7 +630,7 @@ Respond with your reasoning and decision.`
           
           // Send token usage data to parent component for cost calculation
           if (onTokenUsage) {
-            onTokenUsage(promptTokens, completionTokens, config.model);
+            onTokenUsage(promptTokens, completionTokens, configRef.current.model);
           }
           
           // Log the usage for immediate visibility
@@ -507,13 +646,13 @@ Respond with your reasoning and decision.`
           const decisionMatch = fullResponse.match(/DECISION:\s*(\w+)/);
           
           if (observationMatch) {
-            const observation = observationMatch[1].trim();
+            observation = observationMatch[1].trim();
             // console.log('AIController: AI Observation:', observation);
             onLog('ai', `👁️ AI sees: ${observation}`);
           }
           
           if (reasoningMatch) {
-            const reasoning = reasoningMatch[1].trim();
+            reasoning = reasoningMatch[1].trim();
             // console.log('AIController: AI Reasoning:', reasoning);
             onLog('ai', `🧠 AI thinks: ${reasoning}`);
           }
@@ -547,52 +686,30 @@ Respond with your reasoning and decision.`
         
         if (validButtons.includes(buttonDecision)) {
           // console.log(`AIController: Valid button decision: ${buttonDecision}`);
-          return buttonDecision;
+          return { button: buttonDecision, observation, reasoning, fullResponse };
         } else {
           // console.warn(`AIController: Invalid button decision: ${buttonDecision}`);
           onLog('error', `Invalid button: ${String(buttonDecision)}`);
-          return null;
+          return { button: null, observation, reasoning, fullResponse };
         }
         
       } catch (error) {
         console.error('OpenRouter API error:', error);
-        if (axios.isAxiosError(error)) {
-          console.error('API Response:', error.response?.data);
-          console.error('API Status:', error.response?.status);
-          
-          if (error.response?.status === 429) {
-            // Rate limit hit - implement exponential backoff
-            consecutiveErrorsRef.current += 1;
-            const oldDelay = requestDelayRef.current;
-            const newDelay = Math.min(oldDelay * 2, 30000); // Cap at 30 seconds
-            requestDelayRef.current = newDelay;
-            
-            console.log('AIController: Rate limit hit! Delay increased from', oldDelay, 'to', newDelay);
-            onLog('error', `🚦 Rate limit exceeded! Increasing delay from ${oldDelay}ms to ${newDelay}ms`);
-            onLog('ai', `⏳ Will wait longer between requests to avoid rate limits`);
-            
-            throw new Error(`Rate limit exceeded. Increased delay to ${newDelay}ms`);
-          } else if (error.response?.status === 401) {
-            throw new Error('Invalid API key');
-          } else {
-            throw new Error(`API error: ${error.response?.status || 'Unknown'}`);
-          }
-        }
-        
+        // Error details are already logged in makeAPIRequestWithRetry
         onLog('error', `OpenRouter API error: ${error instanceof Error ? error.message : "Unknown error"}`);
         throw error;
       }
       
-      return null; // Add explicit return for when no decision is made
+      return { button: null, observation: undefined, reasoning: undefined, fullResponse: undefined }; // Add explicit return for when no decision is made
     };
 
     const analyzeScreenForTextModel = (/* base64Image: string */): string => { // base64Image is unused
       // For non-vision models, provide a basic text description
       // This is a fallback when vision models aren't available
-      const gameTitle = gameState.currentGame?.toLowerCase() || '';
+      const gameTitle = gameStateRef.current.currentGame?.toLowerCase() || '';
       
       let analysis = `Game Boy screen captured (160x144 pixels)\n`;
-      analysis += `Game: ${gameState.currentGame}\n`;
+      analysis += `Game: ${gameStateRef.current.currentGame}\n`;
       analysis += `Image data available but model does not support vision.\n`;
       
       if (gameTitle.includes('tetris')) {
@@ -613,20 +730,27 @@ Respond with your reasoning and decision.`
       };
     }, []);
 
+    // (Re)load knowledge-base history whenever the active ROM changes
+    React.useEffect(() => {
+      if (gameState.currentRomId) {
+        loadActionHistory(gameState.currentRomId);
+      }
+    }, [gameState.currentRomId, loadActionHistory]);
+
     // Stop AI when game stops or AI is disabled
     React.useEffect(() => {
       // console.log('AIController: useEffect triggered for AI start/stop logic', { /* gameState details */ });
       
-      if (!gameState.isPlaying || !gameState.aiEnabled) {
+      if (!gameStateRef.current.isPlaying || !gameStateRef.current.aiEnabled) {
         // console.log('AIController: Conditions not met for AI to run, ensuring stopped.');
         stopAILoop();
-      } else if (gameState.isPlaying && gameState.aiEnabled && gameState.currentGame && config.apiKey) {
+      } else if (gameStateRef.current.isPlaying && gameStateRef.current.aiEnabled && gameStateRef.current.currentGame && configRef.current.apiKey) {
         // console.log('AIController: Conditions met for AI to run, ensuring started.');
         if (!isPlayingRef.current) { // Only start if not already running
           startAILoop();
         }
       }
-    }, [gameState.isPlaying, gameState.aiEnabled, gameState.currentGame, config.apiKey]);
+    }, [gameStateRef.current.isPlaying, gameStateRef.current.aiEnabled, gameStateRef.current.currentGame, configRef.current.apiKey]);
 
     return null; // This component doesn't render anything
   }
