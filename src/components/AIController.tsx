@@ -4,6 +4,7 @@ import { AIConfig, GameState, LogEntry } from '../store/gameStore';
 import { GameBoyEmulatorRef } from './GameBoyEmulator'; // Import GameBoyEmulatorRef
 import { useButtonMemoryStore } from '../store/buttonMemoryStore';
 import { useActionMemoryStore } from '../store/actionMemoryStore';
+import { makeAIRequest, type AIMessage } from '../utils/aiProviders';
 
 interface AIControllerProps {
   config: AIConfig;
@@ -37,7 +38,6 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
     const lastRequestTimeRef = useRef<number>(Date.now() - 5000); // Initialize to 5 seconds ago
     const requestDelayRef = useRef<number>(3000); // Start with 3 second delay for vision models
     const consecutiveErrorsRef = useRef<number>(0);
-    const isRetryingRef = useRef<boolean>(false);
     const maxRetries = 3;
     const visionFailureCount = useRef<number>(0);
     const maxVisionFailures = 2; // After 2 vision failures, temporarily use text mode
@@ -53,7 +53,8 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
         // console.log('Config:', { hasApiKey: !!config.apiKey, model: config.model });
         // console.log('GameState:', { currentGame: gameState.currentGame, isPlaying: gameState.isPlaying, aiEnabled: gameState.aiEnabled });
         
-        if (!configRef.current.apiKey) {
+        const provider = configRef.current.provider || 'openrouter';
+        if (provider === 'openrouter' && !configRef.current.apiKey) {
           onLog('error', 'OpenRouter API key is required');
           return;
         }
@@ -142,7 +143,8 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
             break;
           }
           
-          if (!configRef.current.apiKey) {
+          const provider = configRef.current.provider || 'openrouter';
+          if (provider === 'openrouter' && !configRef.current.apiKey) {
             // console.log('AIController: Stopping - No API key');
             break;
           }
@@ -367,27 +369,12 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
       });
     };
 
-    const makeAPIRequestWithRetry = async (messages: any[], retryCount = 0): Promise<any> => {
+    const makeAPIRequestWithRetry = async (messages: AIMessage[], retryCount = 0): Promise<any> => {
       try {
         console.log(`AIController: Making API request (attempt ${retryCount + 1}/${maxRetries + 1})`);
+        console.log(`AIController: Using provider: ${configRef.current.provider || 'openrouter'}`);
         
-        const response = await axios.post(
-          'https://openrouter.ai/api/v1/chat/completions',
-          {
-            model: configRef.current.model,
-            messages: messages,
-            temperature: configRef.current.temperature,
-            max_tokens: configRef.current.maxTokens
-          },
-          {
-            headers: {
-              'Authorization': `Bearer ${configRef.current.apiKey}`,
-              'Content-Type': 'application/json',
-              'HTTP-Referer': window.location.origin,
-              'X-Title': 'GameBoy AI Player'
-            }
-          }
-        );
+        const response = await makeAIRequest(configRef.current, messages);
         
         // Successful request - reset error count and gradually reduce delay
         consecutiveErrorsRef.current = 0;
@@ -398,14 +385,23 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
           onLog('ai', `✅ Request successful, reduced delay to ${requestDelayRef.current}ms`);
         }
         
-        return response;
+        return {
+          data: {
+            choices: [{ message: { content: response.content } }],
+            usage: response.usage
+          }
+        };
         
       } catch (error) {
-        if (axios.isAxiosError(error) && error.response?.status === 429) {
+        const isRateLimit = (axios.isAxiosError(error) && error.response?.status === 429) ||
+                           (error instanceof Error && error.message.includes('rate limit'));
+        
+        if (isRateLimit) {
           consecutiveErrorsRef.current += 1;
           
           // Track vision model failures specifically
-          if (configRef.current.model.includes('claude') || configRef.current.model.includes('gpt-4') || configRef.current.model.includes('gemini') || configRef.current.model.includes('vision')) {
+          const provider = configRef.current.provider || 'openrouter';
+          if (provider === 'openrouter' && (configRef.current.model.includes('claude') || configRef.current.model.includes('gpt-4') || configRef.current.model.includes('gemini') || configRef.current.model.includes('vision'))) {
             visionFailureCount.current += 1;
             onLog('ai', `📊 Vision model rate limit count: ${visionFailureCount.current}/${maxVisionFailures}`);
           }
@@ -446,7 +442,7 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
         } else if (axios.isAxiosError(error) && error.response?.status === 401) {
           throw new Error('Invalid API key');
         } else {
-          const errorMsg = axios.isAxiosError(error) ? `${error.response?.status || 'Unknown'}` : 'Unknown';
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
           throw new Error(`API error: ${errorMsg}`);
         }
       }
@@ -490,7 +486,7 @@ const AIController = forwardRef<AIControllerRef, AIControllerProps>(
           onLog('ai', `🔄 Temporarily using text-only analysis due to vision model rate limits...`);
         }
 
-        let messages: any[];
+        let messages: AIMessage[];
         let observation: string | undefined;
         let reasoning: string | undefined;
         
@@ -744,7 +740,7 @@ Respond with your reasoning and decision.`
       if (!gameStateRef.current.isPlaying || !gameStateRef.current.aiEnabled) {
         // console.log('AIController: Conditions not met for AI to run, ensuring stopped.');
         stopAILoop();
-      } else if (gameStateRef.current.isPlaying && gameStateRef.current.aiEnabled && gameStateRef.current.currentGame && configRef.current.apiKey) {
+      } else if (gameStateRef.current.isPlaying && gameStateRef.current.aiEnabled && gameStateRef.current.currentGame && ((configRef.current.provider || 'openrouter') !== 'openrouter' || configRef.current.apiKey)) {
         // console.log('AIController: Conditions met for AI to run, ensuring started.');
         if (!isPlayingRef.current) { // Only start if not already running
           startAILoop();

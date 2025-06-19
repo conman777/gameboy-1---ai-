@@ -230,7 +230,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
           try {
             if (frameSkip === 0) {
               // Apply current joypad state each frame so held buttons register
-              try { WasmBoy.setJoypadState(currentJoypadStateRef.current); } catch{}
+              try { WasmBoy.setJoypadState(currentJoypadStateRef.current); } catch {/* Ignore WasmBoy errors */}
 
               const screenData = getScreenData();
               if (screenData) onScreenUpdate(screenData);
@@ -354,10 +354,10 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
           currentJoypadStateRef.current = newState;
           try {
             WasmBoy.setJoypadState(newState);
-          } catch {}
+          } catch {/* Ignore WasmBoy errors */}
           return newState;
         });
-      } catch {}
+      } catch {/* Ignore WasmBoy errors */}
     };
 
     useImperativeHandle(ref, () => ({
