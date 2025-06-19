@@ -64,7 +64,7 @@ const initialState: GameState = {
   isMuted: false,
   aiConfig: {
     apiKey: '',
-    model: 'anthropic/claude-3-haiku',
+    model: '',
     temperature: 0.7,
     maxTokens: 1000,
     provider: 'openrouter',

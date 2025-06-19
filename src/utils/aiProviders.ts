@@ -102,46 +102,116 @@ async function makeOllamaRequest(
 ): Promise<AIResponse> {
   const baseUrl = config.ollamaUrl || 'http://localhost:11434';
   
-  // Convert messages to Ollama format
-  const prompt = messages.map(msg => {
-    if (typeof msg.content === 'string') {
-      return `${msg.role}: ${msg.content}`;
-    } else {
-      // Handle vision messages
-      const textParts = msg.content.filter(part => part.type === 'text');
-      const imageParts = msg.content.filter(part => part.type === 'image_url');
-      
-      let text = textParts.map(part => part.text).join('\n');
-      
-      if (imageParts.length > 0) {
-        // For Ollama, we need to handle images differently
-        text += '\n[Image provided]';
-      }
-      
-      return `${msg.role}: ${text}`;
-    }
-  }).join('\n\n');
-
-  const response = await axios.post(
-    `${baseUrl}/api/generate`,
-    {
-      model: config.model || 'llava',
-      prompt,
-      options: {
-        temperature: config.temperature,
-        num_predict: config.maxTokens
-      }
-    }
+  // Check if this is a vision request
+  const hasImages = messages.some(msg => 
+    Array.isArray(msg.content) && 
+    msg.content.some(part => part.type === 'image_url')
   );
+  
+  if (hasImages) {
+    // Handle vision requests with Ollama's format
+    let prompt = '';
+    let images: string[] = [];
+    
+    messages.forEach(msg => {
+      if (Array.isArray(msg.content)) {
+        // Extract text and images from vision messages
+        const textParts = msg.content.filter(part => part.type === 'text');
+        const imageParts = msg.content.filter(part => part.type === 'image_url');
+        
+        if (textParts.length > 0) {
+          prompt += textParts.map(part => part.text).join('\n') + '\n';
+        }
+        
+        // Extract base64 images
+        imageParts.forEach(part => {
+          if (part.image_url?.url) {
+            // Remove data:image/png;base64, prefix if present
+            const base64 = part.image_url.url.replace(/^data:image\/[^;]+;base64,/, '');
+            images.push(base64);
+          }
+        });
+      } else if (typeof msg.content === 'string') {
+        prompt += `${msg.role}: ${msg.content}\n`;
+      }
+    });
+    
+    // Use Ollama's vision API format
+    const requestBody = {
+      model: config.model || 'llava',
+      prompt: prompt.trim(),
+      images: images, // Array of base64 encoded images
+      stream: false,
+      options: {
+        temperature: config.temperature || 0.7,
+        num_predict: config.maxTokens || 1000
+      }
+    };
+    
+    console.log('Ollama vision request:', { 
+      model: requestBody.model, 
+      promptLength: requestBody.prompt.length,
+      imageCount: requestBody.images.length,
+      baseUrl: `${baseUrl}/api/generate`
+    });
+    
+    const response = await axios.post(
+      `${baseUrl}/api/generate`,
+      requestBody,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    return {
+      content: response.data.response || '',
+      usage: {
+        prompt_tokens: 0, // Ollama doesn't return token counts
+        completion_tokens: 0,
+        total_tokens: 0
+      }
+    };
+  } else {
+    // Handle text-only requests
+    const prompt = messages.map(msg => {
+      if (typeof msg.content === 'string') {
+        return `${msg.role}: ${msg.content}`;
+      } else {
+        // Fallback for non-vision content arrays
+        const textParts = msg.content.filter(part => part.type === 'text');
+        return `${msg.role}: ${textParts.map(part => part.text).join('\n')}`;
+      }
+    }).join('\n\n');
 
-  return {
-    content: response.data.response || '',
-    usage: {
-      prompt_tokens: 0, // Ollama doesn't return token counts
-      completion_tokens: 0,
-      total_tokens: 0
-    }
-  };
+    const response = await axios.post(
+      `${baseUrl}/api/generate`,
+      {
+        model: config.model || 'llava',
+        prompt,
+        stream: false,
+        options: {
+          temperature: config.temperature || 0.7,
+          num_predict: config.maxTokens || 1000
+        }
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return {
+      content: response.data.response || '',
+      usage: {
+        prompt_tokens: 0, // Ollama doesn't return token counts
+        completion_tokens: 0,
+        total_tokens: 0
+      }
+    };
+  }
 }
 
 export function getAvailableModels(config: AIConfig): Promise<Array<{

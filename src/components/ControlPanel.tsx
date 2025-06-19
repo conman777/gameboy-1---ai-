@@ -96,12 +96,18 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         setAvailableModels(sortedModels);
         setFilteredModels(sortedModels);
         
-        // Set default model if not already set
-        if (!aiConfig.model && sortedModels.length > 0) {
+        // Set default model if not already set OR if current model is incompatible with provider
+        const currentModelExists = sortedModels.some(m => m.id === aiConfig.model);
+        
+        if (!aiConfig.model || !currentModelExists) {
           const defaultModel = provider === 'openrouter' 
             ? sortedModels.find((m: AIModel) => m.id === DEFAULT_MODEL) || sortedModels[0]
             : sortedModels[0];
-          onConfigChange({ ...aiConfig, model: defaultModel.id });
+          
+          if (defaultModel) {
+            console.log(`Setting default model for ${provider}: ${defaultModel.id}`);
+            onConfigChange({ ...aiConfig, model: defaultModel.id });
+          }
         }
         
         console.log(`Loaded ${sortedModels.length} models from ${provider}`);
@@ -135,9 +141,14 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         setAvailableModels(fallbackModels);
         setFilteredModels(fallbackModels);
         
-        // Set default for fallback too
-        if (!aiConfig.model && fallbackModels.length > 0) {
-          onConfigChange({ ...aiConfig, model: fallbackModels[0].id });
+        // Set default for fallback too - check if current model is compatible
+        const currentModelExists = fallbackModels.some(m => m.id === aiConfig.model);
+        
+        if (!aiConfig.model || !currentModelExists) {
+          if (fallbackModels.length > 0) {
+            console.log(`Setting fallback model for ${provider}: ${fallbackModels[0].id}`);
+            onConfigChange({ ...aiConfig, model: fallbackModels[0].id });
+          }
         }
       } finally {
         setIsLoadingModels(false);
@@ -175,7 +186,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     return `$${num.toFixed(2)}/1K`;
   };
 
-  const calculateEstimatedCost = (selectedModel: OpenRouterModel | undefined) => {
+  const calculateEstimatedCost = (selectedModel: AIModel | undefined) => {
     if (!selectedModel?.pricing) return null;
     
     const promptPrice = parseFloat(selectedModel.pricing.prompt) || 0;
@@ -752,8 +763,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           }}
         />
       </div>
-
-
 
       {/* Game Status */}
       <div style={{
