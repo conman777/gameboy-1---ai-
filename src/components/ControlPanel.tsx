@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Cpu, Search } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Pause, Square, Volume2, VolumeX, Brain, BrainCircuit, Upload, Cpu, Search } from 'lucide-react';
 import { AIConfig, GameState } from '../store/gameStore';
 import { useButtonMemoryStore } from '../store/buttonMemoryStore';
 import { getAvailableModels } from '../utils/aiProviders';
@@ -14,6 +14,7 @@ interface ControlPanelProps {
   onStopGame: () => void;
   onClearMemory: () => Promise<void>;
   onResetUsageStats?: () => void;
+  onLoadRom?: (gameData: Uint8Array, fileName: string) => void;
 }
 
 interface AIModel {
@@ -36,7 +37,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   onTogglePlayPause,
   onStopGame,
   onClearMemory,
-  onResetUsageStats
+  onResetUsageStats,
+  onLoadRom
 }) => {
   const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
   const [filteredModels, setFilteredModels] = useState<AIModel[]>([]);
@@ -45,6 +47,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   const [modelError, setModelError] = useState<string | null>(null);
   const { clearMemory } = useButtonMemoryStore();
   const [refreshCount, setRefreshCount] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Default model - good balance of performance and cost
   const DEFAULT_MODEL = 'anthropic/claude-3.5-sonnet';
@@ -206,6 +209,26 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
       perMinute: costPerMinute,
       perHour: costPerHour
     };
+  };
+
+  // Handle file upload for ROM loading
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && onLoadRom) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const arrayBuffer = e.target?.result as ArrayBuffer;
+        const gameDataBytes = new Uint8Array(arrayBuffer);
+        onLoadRom(gameDataBytes, file.name);
+        // Reset file input
+        event.target.value = '';
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  };
+
+  const handleLoadRomClick = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -772,8 +795,29 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         borderRadius: '8px',
         fontSize: '12px'
       }}>
-        <div style={{ fontWeight: 'bold', marginBottom: '8px', color: 'white' }}>
-          Game Status
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '8px' 
+        }}>
+          <span style={{ fontWeight: 'bold', color: 'white' }}>Game Status</span>
+          {onLoadRom && (
+            <button 
+              className="button" 
+              style={{ 
+                fontSize: '10px', 
+                padding: '4px 8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }} 
+              onClick={handleLoadRomClick}
+            >
+              <Upload size={12} />
+              Load ROM
+            </button>
+          )}
         </div>
         <div style={{ color: 'rgba(255,255,255,0.8)' }}>
           <div>Game: {gameState.currentGame || 'None loaded'}</div>
@@ -905,6 +949,15 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         <div>• Z/X: A/B Buttons</div>
         <div>• Enter/Space: Start/Select</div>
       </div>
+
+             {/* File Upload Input */}
+       <input
+         type="file"
+         ref={fileInputRef}
+         accept=".gb,.gbc"
+         onChange={handleFileUpload}
+         style={{ display: 'none' }}
+       />
     </div>
   );
 };
