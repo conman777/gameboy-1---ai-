@@ -1,18 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
-import { GamepadIcon, Settings, FileText } from 'lucide-react';
+import { GamepadIcon, Settings, FileText, Save } from 'lucide-react';
 import GameBoyEmulator, { GameBoyEmulatorRef } from './components/GameBoyEmulator';
 import AIController, { AIControllerRef } from './components/AIController';
 import ControlPanel from './components/ControlPanel';
 import SettingsPanel from './components/SettingsPanel';
 import GameLog from './components/GameLog';
 import GameBoyControls from './components/GameBoyControls';
+import SaveStatesPanel from './components/SaveStatesPanel';
+import AIVisualizationOverlay from './components/AIVisualizationOverlay';
 import { useGameStore, type GameState, type AIConfig } from './store/gameStore';
 import { useButtonMemoryStore } from './store/buttonMemoryStore';
 import { useRomMemoryStore } from './store/romMemoryStore';
 import KnowledgeBase from './components/KnowledgeBase';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'game' | 'settings' | 'log'>('game');
+  const [activeTab, setActiveTab] = useState<'game' | 'settings' | 'log' | 'saves'>('game');
+  const [showAIVisualization, setShowAIVisualization] = useState(false);
+  const [aiVisualizationData, setAIVisualizationData] = useState<{
+    observation?: string;
+    reasoning?: string;
+  }>({});
 
   const {
     isPlaying,
@@ -43,6 +50,7 @@ function App() {
   const emulatorRef = useRef<GameBoyEmulatorRef>(null);
   const aiControllerRef = useRef<AIControllerRef>(null);
   const screenRef = useRef<ImageData | null>(null);
+  const gameCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const handleGameLoad = async (gameData: Uint8Array, fileName: string) => {
     await loadGame(gameData, fileName);
@@ -70,15 +78,63 @@ function App() {
     }
   };
 
-  const handleTokenUsage = (promptTokens: number, completionTokens: number, model: string) => {
-    // Calculate actual cost based on current model pricing
-    // We need to get the model pricing from the same source as ControlPanel
-    const { aiConfig } = useGameStore.getState();
-    
+  const handleTokenUsage = (promptTokens: number, completionTokens: number) => {
     // For now, we'll still pass 0 and let ControlPanel calculate it properly
     // This ensures the cost calculation is consistent and uses the latest pricing data
     updateUsageStats(promptTokens, completionTokens, 0);
   };
+
+  // Extract AI visualization data from recent logs
+  useEffect(() => {
+    const recentLogs = logs.slice(-10);
+    
+    const latestObservation = recentLogs
+      .filter(log => log.type === 'ai' && log.message.includes('👁️ AI sees:'))
+      .slice(-1)[0]?.message.replace('👁️ AI sees: ', '');
+      
+    const latestReasoning = recentLogs
+      .filter(log => log.type === 'ai' && log.message.includes('🧠 AI thinks:'))
+      .slice(-1)[0]?.message.replace('🧠 AI thinks: ', '');
+    
+    setAIVisualizationData({
+      observation: latestObservation,
+      reasoning: latestReasoning
+    });
+  }, [logs]);
+
+  // Find the game canvas for AI visualization overlay and manage emulator positioning
+  useEffect(() => {
+    const findCanvas = () => {
+      const canvas = document.getElementById('wasmboy-canvas') as HTMLCanvasElement;
+      if (canvas && gameCanvasRef.current !== canvas) {
+        gameCanvasRef.current = canvas;
+      }
+    };
+
+    // Move emulator to correct position based on active tab
+    const moveEmulator = () => {
+      const emulatorContainer = document.getElementById('emulator-container');
+      const gameSection = document.querySelector('.game-section');
+      
+      if (emulatorContainer && gameSection && activeTab === 'game') {
+        // Move emulator into the game section if it's not already there
+        if (!gameSection.contains(emulatorContainer)) {
+          gameSection.appendChild(emulatorContainer);
+        }
+      }
+    };
+
+    // Try to find canvas and position emulator
+    findCanvas();
+    moveEmulator();
+    
+    const interval = setInterval(() => {
+      findCanvas();
+      moveEmulator();
+    }, 100); // Check more frequently for positioning
+
+    return () => clearInterval(interval);
+  }, [currentGame, activeTab]);
 
   const handleManualButtonPress = (button: string) => {
     if (emulatorRef.current && !aiEnabled) {
@@ -113,7 +169,6 @@ function App() {
   }, [currentRomId, loadRomMemory, loadFromRomMemory, addLog]);
 
   useEffect(() => {
-    console.log(`[MANUAL TEST] App: AI Control useEffect triggered. AI Enabled: ${aiEnabled}, Is Playing: ${isPlaying}, Game: ${currentGame}`);
     if (aiEnabled && isPlaying && currentGame && aiControllerRef.current) {
       addLog('info', 'App: useEffect -> STARTING AI (due to state change)');
       aiControllerRef.current.startPlaying();
@@ -133,7 +188,8 @@ function App() {
         // Tab shortcuts
         case '1': if (event.ctrlKey || event.metaKey) { event.preventDefault(); setActiveTab('game'); } break;
         case '2': if (event.ctrlKey || event.metaKey) { event.preventDefault(); setActiveTab('settings'); } break;
-        case '3': if (event.ctrlKey || event.metaKey) { event.preventDefault(); setActiveTab('log'); } break;
+        case '3': if (event.ctrlKey || event.metaKey) { event.preventDefault(); setActiveTab('saves'); } break;
+        case '4': if (event.ctrlKey || event.metaKey) { event.preventDefault(); setActiveTab('log'); } break;
         default: break;
       }
     };
@@ -144,7 +200,8 @@ function App() {
   const tabs = [
     { id: 'game' as const, label: 'Game & AI Control', icon: GamepadIcon, shortcut: '1' },
     { id: 'settings' as const, label: 'Settings', icon: Settings, shortcut: '2' },
-    { id: 'log' as const, label: 'Log', icon: FileText, shortcut: '3' }
+    { id: 'saves' as const, label: 'Save States', icon: Save, shortcut: '3' },
+    { id: 'log' as const, label: 'Log', icon: FileText, shortcut: '4' }
   ];
 
   return (
@@ -183,18 +240,33 @@ function App() {
 
       {/* Tab Content */}
       <main className="tab-content">
+        {/* Always-mounted GameBoy Emulator */}
+        <div 
+          id="emulator-container"
+          className={activeTab === 'game' ? 'emulator-visible' : 'emulator-hidden'}
+        >
+          <GameBoyEmulator
+            ref={emulatorRef}
+            gameData={gameData}
+            isPlaying={isPlaying}
+            isMuted={isMuted}
+            onScreenUpdate={handleScreenUpdate}
+            onGameLoad={handleGameLoad}
+          />
+        </div>
+
         {activeTab === 'game' && (
           <div className="tab-panel">
             <div className="game-layout">
-              {/* Game Screen */}
-              <div className="game-section">
-                <GameBoyEmulator
-                  ref={emulatorRef}
-                  gameData={gameData}
-                  isPlaying={isPlaying}
-                  isMuted={isMuted}
-                  onScreenUpdate={handleScreenUpdate}
-                  onGameLoad={handleGameLoad}
+              {/* Game Screen - Contains the AI Visualization Overlay */}
+              <div className="game-section" style={{ position: 'relative' }}>
+                {/* AI Visualization Overlay */}
+                <AIVisualizationOverlay
+                  gameScreenRef={gameCanvasRef}
+                  isVisible={showAIVisualization}
+                  onToggleVisibility={() => setShowAIVisualization(!showAIVisualization)}
+                  aiObservation={aiVisualizationData.observation}
+                  aiReasoning={aiVisualizationData.reasoning}
                 />
               </div>
               
@@ -292,6 +364,17 @@ function App() {
             <SettingsPanel
               aiConfig={aiConfig}
               onConfigChange={handleAIConfigChange}
+            />
+          </div>
+        )}
+
+        {activeTab === 'saves' && (
+          <div className="tab-panel">
+            <SaveStatesPanel
+              currentRomId={currentRomId}
+              emulatorRef={emulatorRef}
+              onLoadState={(stateId) => addLog('game', `Loaded save state: ${stateId.substring(0, 8)}...`)}
+              onSaveState={(stateName) => addLog('game', `Created save state: ${stateName}`)}
             />
           </div>
         )}

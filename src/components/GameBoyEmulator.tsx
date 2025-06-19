@@ -17,6 +17,8 @@ export interface GameBoyEmulatorRef {
   releaseButton: (button: string) => void;
   getScreenData: () => ImageData | null;
   isReady: () => boolean;
+  saveState: () => Promise<Uint8Array | null>;
+  loadState: (stateData: Uint8Array) => Promise<boolean>;
 }
 
 // WasmBoy joypad state object
@@ -180,24 +182,18 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
           if (typeof (WasmBoy as any).disableAudio === 'function' && typeof (WasmBoy as any).enableAudio === 'function') {
             if (isMuted) {
               (WasmBoy as any).disableAudio();
-              console.log('Audio muted using disableAudio()');
             } else {
               (WasmBoy as any).enableAudio();
-              console.log('Audio unmuted using enableAudio()');
             }
           } else if (typeof (WasmBoy as any).updateConfig === 'function') {
             // Try updating config
             (WasmBoy as any).updateConfig({ isAudioEnabled: !isMuted });
-            console.log(`Audio ${isMuted ? 'muted' : 'unmuted'} using updateConfig`);
           } else if (typeof (WasmBoy as any).config === 'function') {
             // Try reconfiguring
             (WasmBoy as any).config({ isAudioEnabled: !isMuted });
-            console.log(`Audio ${isMuted ? 'muted' : 'unmuted'} using config`);
-          } else {
-            console.warn('No known audio control methods found on WasmBoy');
           }
         } catch (error) {
-          console.warn('Failed to change audio state:', error);
+          // Audio state change failed - ignore silently
         }
       }
     }, [isMuted]);
@@ -316,9 +312,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
     }, [ref]);
 
     const pressButton = async (button: string) => {
-      console.log('[EMULATOR LOG] pressButton called with button:', button);
       if (!wasmBoyInitialized.current) {
-        // console.warn('⚠️ WasmBoy not initialized, cannot press button');
         return;
       }
       // console.log(`🎮 PRESSING BUTTON: ${button}`);
@@ -360,6 +354,32 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
       } catch {/* Ignore WasmBoy errors */}
     };
 
+    const saveState = async (): Promise<Uint8Array | null> => {
+      if (!wasmBoyInitialized.current || !WasmBoy.isReady()) {
+        return null;
+      }
+      
+      try {
+        const saveStateArray = await WasmBoy.saveState();
+        return saveStateArray;
+      } catch (error) {
+        return null;
+      }
+    };
+
+    const loadState = async (stateData: Uint8Array): Promise<boolean> => {
+      if (!wasmBoyInitialized.current || !WasmBoy.isReady()) {
+        return false;
+      }
+      
+      try {
+        await WasmBoy.loadState(stateData);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    };
+
     useImperativeHandle(ref, () => ({
       reset: () => {
         if (wasmBoyInitialized.current) WasmBoy.reset();
@@ -367,7 +387,9 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
       pressButton,
       releaseButton,
       getScreenData,
-      isReady: () => wasmBoyInitialized.current && WasmBoy.isReady()
+      isReady: () => wasmBoyInitialized.current && WasmBoy.isReady(),
+      saveState,
+      loadState
     }));
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -385,7 +407,6 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
 
     useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
-        console.log('[EMULATOR KEYDOWN] handleKeyDown fired for key:', event.key);
         if (!wasmBoyInitialized.current) return;
         let button = '';
         switch (event.key) {
@@ -432,8 +453,8 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
     }, [ref]);
 
     // A helper function to pass to onGameLoad in case of error
-    const onGameLoadError = (error: Error) => {
-      console.error('Game load error:', error);
+    const onGameLoadError = (_error: Error) => {
+      // Game load error occurred - could be logged to analytics in production
     };
 
     // ----------------------------

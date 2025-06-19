@@ -16,6 +16,7 @@ export interface AIConfig {
   provider?: 'openrouter' | 'lmstudio' | 'ollama';
   lmStudioUrl?: string;
   ollamaUrl?: string;
+  goal?: string;
 }
 
 export interface UsageStats {
@@ -69,7 +70,8 @@ const initialState: GameState = {
     maxTokens: 1000,
     provider: 'openrouter',
     lmStudioUrl: 'http://localhost:1234',
-    ollamaUrl: 'http://localhost:11434'
+    ollamaUrl: 'http://localhost:11434',
+    goal: ''
   },
   usageStats: {
     totalPromptTokens: 0,

@@ -1663,3 +1663,22 @@ body {
   border-left-color: #fbbf24;
 }
 
+/* Emulator container styles for always-mounted emulator */
+#emulator-container.emulator-visible {
+  /* When visible, position the emulator normally within the game layout */
+  position: static;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  order: 1; /* Ensure it appears first in the game layout */
+}
+
+#emulator-container.emulator-hidden {
+  /* When hidden, position off-screen but keep it mounted for continuous play */
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  visibility: hidden;
+  pointer-events: none;
+}
+

@@ -515,7 +515,7 @@ Available buttons: UP, DOWN, LEFT, RIGHT, A, B, START, SELECT
 Game Context:
 - Game: ${gameTitle}
 - Last decision: ${lastDecision || 'None'}
-- Decision history: ${JSON.stringify(recentDecisionCounts)}${avoidanceText}
+- Decision history: ${JSON.stringify(recentDecisionCounts)}${configRef.current.goal ? `\n- AI Goal: ${configRef.current.goal}` : ''}${avoidanceText}
 
 CRITICAL TETRIS NAVIGATION RULES:
 
@@ -538,20 +538,20 @@ TETRIS GAMEPLAY (once game starts):
 - LEFT/RIGHT: Move piece horizontally
 - DOWN: Drop piece faster (use sparingly!)
 
-DEBUGGING FOCUS:
-- We're currently debugging why the AI can't get past the title screen
-- Focus on START and A buttons for menu navigation
-- Don't worry about complex strategies - just get past menus first
-- If you see any text or menu, try A to advance
-- If A doesn't work, try START
-- Pattern avoidance is currently DISABLED for debugging
+PATTERN AVOIDANCE:
+- If you've been pressing the same button repeatedly without progress, try a different approach
+- Avoid alternating between just two buttons - this usually indicates you're stuck
+- If stuck on a menu, try all navigation options: UP, DOWN, LEFT, RIGHT, A, B, START, SELECT
+- Remember that some menus require specific button combinations or sequences
 
 RESPONSE FORMAT:
 OBSERVATION: [Describe exactly what you see - text, graphics, menus, etc.]
-REASONING: [Explain why you're choosing this button for Tetris menu navigation]
+REASONING: [Explain why you're choosing this button${configRef.current.goal ? ` to achieve the goal: ${configRef.current.goal}` : ' for game progression'}]
 DECISION: [Button name - focus on START or A for menus]
 
-Look at the game screen and determine what button will advance past the current screen.`
+${configRef.current.goal ? `PRIORITY OBJECTIVE: Your primary focus is to achieve the goal: "${configRef.current.goal}". Every decision should be evaluated based on how it helps achieve this specific objective.
+
+` : ''}Look at the game screen and determine what button will ${configRef.current.goal ? 'help achieve your goal' : 'advance past the current screen'}.`
                 },
                 {
                   type: 'image_url',
@@ -585,13 +585,15 @@ ${screenAnalysis}
 
 Game Context:
 - Game: ${gameTitle}
-- Last decision: ${lastDecision || 'None'}
+- Last decision: ${lastDecision || 'None'}${configRef.current.goal ? `\n- AI Goal: ${configRef.current.goal}` : ''}
 
 [Same decision rules as above...]
 
-PLEASE DESCRIBE YOUR REASONING:
+${configRef.current.goal ? `PRIORITY OBJECTIVE: Your primary focus is to achieve the goal: "${configRef.current.goal}". Every decision should be evaluated based on how it helps achieve this specific objective.
+
+` : ''}PLEASE DESCRIBE YOUR REASONING:
 Format your response like this:
-REASONING: [Explain why you're choosing this button based on the game state]
+REASONING: [Explain why you're choosing this button${configRef.current.goal ? ` to achieve the goal: ${configRef.current.goal}` : ' based on the game state'}]
 DECISION: [Button name]
 
 Respond with your reasoning and decision.`

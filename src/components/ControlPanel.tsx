@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Square, Volume2, VolumeX, Brain, BrainCircuit, Upload, Cpu, Search } from 'lucide-react';
+import { Upload, Cpu, Search } from 'lucide-react';
 import { AIConfig, GameState } from '../store/gameStore';
 import { useButtonMemoryStore } from '../store/buttonMemoryStore';
 import { getAvailableModels } from '../utils/aiProviders';
@@ -189,27 +189,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     return `$${num.toFixed(2)}/1K`;
   };
 
-  const calculateEstimatedCost = (selectedModel: AIModel | undefined) => {
-    if (!selectedModel?.pricing) return null;
-    
-    const promptPrice = parseFloat(selectedModel.pricing.prompt) || 0;
-    const completionPrice = parseFloat(selectedModel.pricing.completion) || 0;
-    
-    // Estimate tokens for game playing
-    const avgPromptTokens = 1000; // Image + instructions + context
-    const avgCompletionTokens = 100; // AI response
-    const decisionsPerMinute = 2; // AI makes ~2 decisions per minute
-    
-    const costPerDecision = (avgPromptTokens * promptPrice) + (avgCompletionTokens * completionPrice);
-    const costPerMinute = costPerDecision * decisionsPerMinute;
-    const costPerHour = costPerMinute * 60;
-    
-    return {
-      perDecision: costPerDecision,
-      perMinute: costPerMinute,
-      perHour: costPerHour
-    };
-  };
+
 
   // Handle file upload for ROM loading
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -381,23 +361,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             alignItems: 'center'
           }}>
             <span>✅ Loaded {availableModels.length} models from {aiConfig.provider || 'OpenRouter'}</span>
-            <button
-              onClick={() => {
-                console.log('All available models:', availableModels);
-                console.log('Current filtered models:', filteredModels);
-              }}
-              style={{
-                background: 'none',
-                border: '1px solid rgba(34, 197, 94, 0.5)',
-                color: '#22c55e',
-                padding: '2px 6px',
-                borderRadius: '3px',
-                fontSize: '10px',
-                cursor: 'pointer'
-              }}
-            >
-              Debug Models
-            </button>
+
           </div>
         )}
         
@@ -625,15 +589,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                 const promptPrice = parseFloat(selectedModelPricing.prompt) || 0;
                 const completionPrice = parseFloat(selectedModelPricing.completion) || 0;
                 
-                // Debug logging to understand why costs might be 0
-                console.log('Cost Calculation Debug:', {
-                  selectedModel: selectedModel?.id,
-                  selectedModelPricing,
-                  promptPrice,
-                  completionPrice,
-                  totalPromptTokens: usageStats.totalPromptTokens,
-                  totalCompletionTokens: usageStats.totalCompletionTokens
-                });
+
                 
                 const promptCost = (usageStats.totalPromptTokens / 1000) * promptPrice;
                 const completionCost = (usageStats.totalCompletionTokens / 1000) * completionPrice;
@@ -690,11 +646,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                     <div style={{ color: 'rgba(255,255,255,0.8)', lineHeight: '1.4' }}>
                       <div style={{ marginBottom: '3px' }}>
                         <strong>Session Total: ${totalActualCost.toFixed(4)}</strong>
-                        {totalActualCost === 0 && usageStats.totalRequests > 0 && (
-                          <span style={{ color: '#ff6b6b', marginLeft: '8px', fontSize: '9px' }}>
-                            (Check console for debug info)
-                          </span>
-                        )}
+
                       </div>
                       <div>Tokens: {usageStats.totalPromptTokens.toLocaleString()} prompt + {usageStats.totalCompletionTokens.toLocaleString()} completion</div>
                       <div>Requests: {usageStats.totalRequests}</div>
@@ -722,6 +674,92 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             </div>
           );
         })()}
+      </div>
+
+      {/* AI Goal Setting */}
+      <div style={{ marginBottom: '16px' }}>
+        <label style={{ 
+          color: 'rgba(255,255,255,0.9)', 
+          fontSize: '14px',
+          fontWeight: 'bold',
+          marginBottom: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px'
+        }}>
+          🎯 AI Goal
+        </label>
+        <textarea
+          value={aiConfig.goal || ''}
+          onChange={(e) => handleConfigChange({ goal: e.target.value })}
+          placeholder="Set a specific goal for the AI (e.g., 'Find the key', 'Defeat 5 enemies', 'Get to the top of the tower')..."
+          className="input-field"
+          style={{
+            width: '100%',
+            minHeight: '60px',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            border: '1px solid rgba(255,255,255,0.2)',
+            background: 'rgba(0,0,0,0.3)',
+            color: 'white',
+            fontSize: '13px',
+            fontFamily: 'inherit',
+            resize: 'vertical'
+          }}
+        />
+        <div style={{ 
+          fontSize: '10px', 
+          color: 'rgba(255,255,255,0.6)',
+          marginTop: '4px',
+          fontStyle: 'italic'
+        }}>
+          💡 The AI will focus on achieving this specific objective while playing
+        </div>
+        
+        {/* Goal Examples */}
+        <div style={{ marginTop: '8px' }}>
+          <div style={{ 
+            fontSize: '11px', 
+            color: 'rgba(255,255,255,0.7)',
+            marginBottom: '4px',
+            fontWeight: 'bold'
+          }}>
+            Example Goals:
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+            {[
+              'Complete level 1',
+              'Collect all coins',
+              'Find the exit',
+              'Defeat the boss',
+              'Reach high score',
+              'Survive 5 minutes'
+            ].map(example => (
+              <button
+                key={example}
+                onClick={() => handleConfigChange({ goal: example })}
+                style={{
+                  background: 'rgba(155, 181, 99, 0.2)',
+                  border: '1px solid rgba(155, 181, 99, 0.4)',
+                  borderRadius: '12px',
+                  color: 'rgba(255,255,255,0.8)',
+                  padding: '2px 8px',
+                  fontSize: '10px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(155, 181, 99, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(155, 181, 99, 0.2)';
+                }}
+              >
+                {example}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Temperature */}
