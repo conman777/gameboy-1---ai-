@@ -230,7 +230,7 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
           try {
             if (frameSkip === 0) {
               // Apply current joypad state each frame so held buttons register
-              try { WasmBoy.setJoypadState(currentJoypadStateRef.current); } catch{}
+              try { WasmBoy.setJoypadState(currentJoypadStateRef.current); } catch {/* Ignore WasmBoy errors */}
 
               const screenData = getScreenData();
               if (screenData) onScreenUpdate(screenData);
@@ -354,10 +354,10 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
           currentJoypadStateRef.current = newState;
           try {
             WasmBoy.setJoypadState(newState);
-          } catch {}
+          } catch {/* Ignore WasmBoy errors */}
           return newState;
         });
-      } catch {}
+      } catch {/* Ignore WasmBoy errors */}
     };
 
     useImperativeHandle(ref, () => ({
@@ -618,20 +618,18 @@ const GameBoyEmulator = forwardRef<GameBoyEmulatorRef, GameBoyEmulatorProps>(
             </div>
             
             {/* File Upload (Hidden in body) */}
-            {!gameData && (
-              <div className="rom-loader">
-                <label className="rom-upload-label">
-                  <Upload size={16} />
-                  Load ROM (.gb/.gbc)
-                  <input
-                    type="file"
-                    accept=".gb,.gbc"
-                    onChange={handleFileUpload}
-                    style={{ display: 'none' }}
-                  />
-                </label>
-              </div>
-            )}
+            <div className="rom-loader">
+              <label className="rom-upload-label">
+                <Upload size={16} />
+                {gameData ? 'Load New ROM' : 'Load ROM (.gb/.gbc)'}
+                <input
+                  type="file"
+                  accept=".gb,.gbc"
+                  onChange={handleFileUpload}
+                  style={{ display: 'none' }}
+                />
+              </label>
+            </div>
           </div>
 
           {/* Volume Slider and Headphone Jack */}

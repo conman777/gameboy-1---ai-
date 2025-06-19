@@ -8,7 +8,7 @@ interface ActionMemoryState {
   clearActions: (romId: string) => Promise<void>;
 }
 
-export const useActionMemoryStore = create<ActionMemoryState>((set, get) => ({
+export const useActionMemoryStore = create<ActionMemoryState>((set, _get) => ({
   actions: [],
   loadActions: async (romId: string) => {
     const records = await getActionsForRom(romId);

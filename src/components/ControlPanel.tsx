@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Cpu, Search } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Pause, Square, Volume2, VolumeX, Brain, BrainCircuit, Upload, Cpu, Search } from 'lucide-react';
 import { AIConfig, GameState } from '../store/gameStore';
 import { useButtonMemoryStore } from '../store/buttonMemoryStore';
+import { getAvailableModels } from '../utils/aiProviders';
 
 interface ControlPanelProps {
   aiConfig: AIConfig;
@@ -13,9 +14,10 @@ interface ControlPanelProps {
   onStopGame: () => void;
   onClearMemory: () => Promise<void>;
   onResetUsageStats?: () => void;
+  onLoadRom?: (gameData: Uint8Array, fileName: string) => void;
 }
 
-interface OpenRouterModel {
+interface AIModel {
   id: string;
   name: string;
   description?: string;
@@ -35,103 +37,121 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   onTogglePlayPause,
   onStopGame,
   onClearMemory,
-  onResetUsageStats
+  onResetUsageStats,
+  onLoadRom
 }) => {
-  const [availableModels, setAvailableModels] = useState<OpenRouterModel[]>([]);
-  const [filteredModels, setFilteredModels] = useState<OpenRouterModel[]>([]);
+  const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
+  const [filteredModels, setFilteredModels] = useState<AIModel[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
   const { clearMemory } = useButtonMemoryStore();
   const [refreshCount, setRefreshCount] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Default model - good balance of performance and cost
   const DEFAULT_MODEL = 'anthropic/claude-3.5-sonnet';
 
-  // Fetch available models from OpenRouter (re-run whenever API key changes)
+  // Fetch available models based on provider
   useEffect(() => {
     const fetchModels = async () => {
       setIsLoadingModels(true);
       setModelError(null);
 
       try {
-        const headers: Record<string, string> = {};
-        if (aiConfig.apiKey) {
-          headers['Authorization'] = `Bearer ${aiConfig.apiKey}`;
-        }
-
-        const response = await fetch('https://openrouter.ai/api/v1/models', {
-          headers
-        });
-        if (!response.ok) {
-          throw new Error(`Failed to fetch models: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const models = data.data || [];
+        const provider = aiConfig.provider || 'openrouter';
+        console.log(`Fetching models for provider: ${provider}`);
         
-        // Sort models by preference and popularity
-        const sortedModels = models.sort((a: OpenRouterModel, b: OpenRouterModel) => {
-          // Prioritize popular/good models at the top
-          const getModelPriority = (model: OpenRouterModel) => {
-            const id = model.id.toLowerCase();
-            if (id.includes('claude-3.5-sonnet')) return 1;
-            if (id.includes('gpt-4o') && !id.includes('mini')) return 2;
-            if (id.includes('claude-3.5-haiku')) return 3;
-            if (id.includes('gpt-4o-mini')) return 4;
-            if (id.includes('claude-3') && id.includes('sonnet')) return 5;
-            if (id.includes('gemini-1.5-pro')) return 6;
-            if (id.includes('gpt-4')) return 7;
-            if (id.includes('claude')) return 8;
-            if (id.includes('gemini')) return 9;
-            if (id.includes('llama')) return 10;
-            if (id.includes('gpt')) return 11;
-            return 12;
-          };
-          
-          const priorityA = getModelPriority(a);
-          const priorityB = getModelPriority(b);
-          
-          if (priorityA !== priorityB) {
-            return priorityA - priorityB;
-          }
-          
-          return a.name.localeCompare(b.name);
-        });
+        const models = await getAvailableModels(aiConfig);
+        
+        // Sort models by preference and popularity for OpenRouter
+        let sortedModels = models;
+        if (provider === 'openrouter') {
+          sortedModels = models.sort((a: AIModel, b: AIModel) => {
+            // Prioritize popular/good models at the top
+            const getModelPriority = (model: AIModel) => {
+              const id = model.id.toLowerCase();
+              if (id.includes('claude-3.5-sonnet')) return 1;
+              if (id.includes('gpt-4o') && !id.includes('mini')) return 2;
+              if (id.includes('claude-3.5-haiku')) return 3;
+              if (id.includes('gpt-4o-mini')) return 4;
+              if (id.includes('claude-3') && id.includes('sonnet')) return 5;
+              if (id.includes('gemini-1.5-pro')) return 6;
+              if (id.includes('gpt-4')) return 7;
+              if (id.includes('claude')) return 8;
+              if (id.includes('gemini')) return 9;
+              if (id.includes('llama')) return 10;
+              if (id.includes('gpt')) return 11;
+              return 12;
+            };
+            
+            const priorityA = getModelPriority(a);
+            const priorityB = getModelPriority(b);
+            
+            if (priorityA !== priorityB) {
+              return priorityA - priorityB;
+            }
+            
+            return a.name.localeCompare(b.name);
+          });
+        }
         
         setAvailableModels(sortedModels);
         setFilteredModels(sortedModels);
         
-        // Set default model if not already set
-        if (!aiConfig.model && sortedModels.length > 0) {
-          const defaultModel = sortedModels.find((m: OpenRouterModel) => m.id === DEFAULT_MODEL) || sortedModels[0];
-          onConfigChange({ ...aiConfig, model: defaultModel.id });
+        // Set default model if not already set OR if current model is incompatible with provider
+        const currentModelExists = sortedModels.some(m => m.id === aiConfig.model);
+        
+        if (!aiConfig.model || !currentModelExists) {
+          const defaultModel = provider === 'openrouter' 
+            ? sortedModels.find((m: AIModel) => m.id === DEFAULT_MODEL) || sortedModels[0]
+            : sortedModels[0];
+          
+          if (defaultModel) {
+            console.log(`Setting default model for ${provider}: ${defaultModel.id}`);
+            onConfigChange({ ...aiConfig, model: defaultModel.id });
+          }
         }
         
-        console.log(`Loaded ${sortedModels.length} models from OpenRouter`);
-        console.log('Sample models:', sortedModels.slice(0, 10).map((m: OpenRouterModel) => m.id));
+        console.log(`Loaded ${sortedModels.length} models from ${provider}`);
+        console.log('Sample models:', sortedModels.slice(0, 5).map((m: AIModel) => m.id));
       } catch (error) {
-        console.error('Failed to fetch OpenRouter models:', error);
+        console.error(`Failed to fetch models from ${aiConfig.provider || 'openrouter'}:`, error);
         setModelError(error instanceof Error ? error.message : 'Failed to load models');
         
-        // Fallback to hardcoded models with enhanced selection
-        const fallbackModels = [
-          { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', description: 'Best reasoning and game understanding' },
-          { id: 'openai/gpt-4o', name: 'GPT-4o', description: 'Most capable GPT-4 model with vision' },
-          { id: 'anthropic/claude-3.5-haiku', name: 'Claude 3.5 Haiku', description: 'Fast and efficient Claude model' },
-          { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', description: 'Fast and affordable with vision' },
-          { id: 'google/gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: 'Google flagship with long context' },
-          { id: 'anthropic/claude-3-sonnet', name: 'Claude 3 Sonnet', description: 'Excellent reasoning' },
-          { id: 'meta-llama/llama-3.1-70b-instruct', name: 'Llama 3.1 70B', description: 'Large open source model' },
-          { id: 'meta-llama/llama-3.1-8b-instruct', name: 'Llama 3.1 8B', description: 'Efficient open source' }
-        ];
+        // Fallback to provider-specific default models
+        const provider = aiConfig.provider || 'openrouter';
+        let fallbackModels: AIModel[] = [];
+        
+        if (provider === 'openrouter') {
+          fallbackModels = [
+            { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', description: 'Best reasoning and game understanding' },
+            { id: 'openai/gpt-4o', name: 'GPT-4o', description: 'Most capable GPT-4 model with vision' },
+            { id: 'anthropic/claude-3.5-haiku', name: 'Claude 3.5 Haiku', description: 'Fast and efficient Claude model' },
+            { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', description: 'Fast and affordable with vision' }
+          ];
+        } else if (provider === 'lmstudio') {
+          fallbackModels = [
+            { id: 'local-model', name: 'Local Model', description: 'LM Studio local model' }
+          ];
+        } else if (provider === 'ollama') {
+          fallbackModels = [
+            { id: 'llava', name: 'LLaVA', description: 'Vision-capable model' },
+            { id: 'llama2', name: 'Llama 2', description: 'Text-only model' }
+          ];
+        }
         
         setAvailableModels(fallbackModels);
         setFilteredModels(fallbackModels);
         
-        // Set default for fallback too
-        if (!aiConfig.model) {
-          onConfigChange({ ...aiConfig, model: DEFAULT_MODEL });
+        // Set default for fallback too - check if current model is compatible
+        const currentModelExists = fallbackModels.some(m => m.id === aiConfig.model);
+        
+        if (!aiConfig.model || !currentModelExists) {
+          if (fallbackModels.length > 0) {
+            console.log(`Setting fallback model for ${provider}: ${fallbackModels[0].id}`);
+            onConfigChange({ ...aiConfig, model: fallbackModels[0].id });
+          }
         }
       } finally {
         setIsLoadingModels(false);
@@ -139,7 +159,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     };
 
     fetchModels();
-  }, [aiConfig.apiKey, refreshCount]);
+  }, [aiConfig.apiKey, aiConfig.provider, aiConfig.lmStudioUrl, aiConfig.ollamaUrl, refreshCount]);
 
   // Filter models based on search query
   useEffect(() => {
@@ -169,7 +189,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     return `$${num.toFixed(2)}/1K`;
   };
 
-  const calculateEstimatedCost = (selectedModel: OpenRouterModel | undefined) => {
+  const calculateEstimatedCost = (selectedModel: AIModel | undefined) => {
     if (!selectedModel?.pricing) return null;
     
     const promptPrice = parseFloat(selectedModel.pricing.prompt) || 0;
@@ -189,6 +209,26 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
       perMinute: costPerMinute,
       perHour: costPerHour
     };
+  };
+
+  // Handle file upload for ROM loading
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && onLoadRom) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const arrayBuffer = e.target?.result as ArrayBuffer;
+        const gameDataBytes = new Uint8Array(arrayBuffer);
+        onLoadRom(gameDataBytes, file.name);
+        // Reset file input
+        event.target.value = '';
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  };
+
+  const handleLoadRomClick = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -265,37 +305,62 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         AI Control
       </h3>
 
-      {/* API Key Status */}
-      {!aiConfig.apiKey ? (
-        <div style={{ 
-          fontSize: '12px', 
-          color: '#ff6b6b', 
-          marginBottom: '16px',
-          padding: '8px 12px',
-          background: 'rgba(255, 107, 107, 0.1)',
-          borderRadius: '6px',
-          border: '1px solid rgba(255, 107, 107, 0.3)'
-        }}>
-          ⚠️ Please set your OpenRouter API key in Settings to access AI models
-        </div>
-      ) : (
-        <div style={{ 
-          fontSize: '12px', 
-          color: '#22c55e', 
-          marginBottom: '16px',
-          padding: '8px 12px',
-          background: 'rgba(34, 197, 94, 0.1)',
-          borderRadius: '6px',
-          border: '1px solid rgba(34, 197, 94, 0.3)'
-        }}>
-          ✅ API key configured - full model catalog available
-        </div>
-      )}
+      {/* Provider Status */}
+      {(() => {
+        const provider = aiConfig.provider || 'openrouter';
+        const needsApiKey = provider === 'openrouter' && !aiConfig.apiKey;
+        const isConfigured = provider === 'openrouter' ? !!aiConfig.apiKey : true;
+        
+        if (needsApiKey) {
+          return (
+            <div style={{ 
+              fontSize: '12px', 
+              color: '#ff6b6b', 
+              marginBottom: '16px',
+              padding: '8px 12px',
+              background: 'rgba(255, 107, 107, 0.1)',
+              borderRadius: '6px',
+              border: '1px solid rgba(255, 107, 107, 0.3)'
+            }}>
+              ⚠️ Please set your OpenRouter API key in Settings to access AI models
+            </div>
+          );
+        }
+        
+        if (isConfigured) {
+          let statusText = '';
+          if (provider === 'openrouter') {
+            statusText = 'API key configured - full model catalog available';
+          } else if (provider === 'lmstudio') {
+            statusText = 'LM Studio local server configured';
+          } else if (provider === 'ollama') {
+            statusText = 'Ollama local server configured';
+          }
+          
+          return (
+            <div style={{ 
+              fontSize: '12px', 
+              color: '#22c55e', 
+              marginBottom: '16px',
+              padding: '8px 12px',
+              background: 'rgba(34, 197, 94, 0.1)',
+              borderRadius: '6px',
+              border: '1px solid rgba(34, 197, 94, 0.3)'
+            }}>
+              ✅ {statusText}
+            </div>
+          );
+        }
+        
+        return null;
+      })()}
 
       {/* Model Selection with Search */}
       <div style={{ marginBottom: '16px' }}>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: 'white' }}>
-          AI Model Selection {isLoadingModels && '(Loading all models...)'}
+          {aiConfig.provider === 'lmstudio' ? 'LM Studio Model' : 
+           aiConfig.provider === 'ollama' ? 'Ollama Model' : 
+           'AI Model Selection'} {isLoadingModels && '(Loading...)'}
           {!isLoadingModels && (
             <span style={{ fontSize: '12px', fontWeight: 'normal', opacity: 0.7 }}>
               (Showing {filteredModels.length} of {availableModels.length} total models)
@@ -315,7 +380,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             justifyContent: 'space-between',
             alignItems: 'center'
           }}>
-            <span>✅ Loaded {availableModels.length} models from OpenRouter</span>
+            <span>✅ Loaded {availableModels.length} models from {aiConfig.provider || 'OpenRouter'}</span>
             <button
               onClick={() => {
                 console.log('All available models:', availableModels);
@@ -366,7 +431,11 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search all models: claude, gpt, gemini, llama, mistral, cohere..."
+              placeholder={
+                aiConfig.provider === 'lmstudio' ? 'Search local models...' :
+                aiConfig.provider === 'ollama' ? 'Search Ollama models: llava, llama2, mistral...' :
+                'Search all models: claude, gpt, gemini, llama, mistral, cohere...'
+              }
               className="input-field"
               style={{
                 paddingLeft: '32px',
@@ -438,13 +507,18 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
 
         {/* Show description and details of selected model */}
         {(() => {
-          const selectedModel = filteredModels.find((m: OpenRouterModel) => m.id === aiConfig.model) || 
-                               availableModels.find((m: OpenRouterModel) => m.id === aiConfig.model);
-          const isVisionModel = aiConfig.model.includes('claude') || 
-                               aiConfig.model.includes('gpt-4') || 
-                               aiConfig.model.includes('gemini') ||
-                               aiConfig.model.includes('vision');
-          const isDefault = aiConfig.model === DEFAULT_MODEL;
+          const selectedModel = filteredModels.find((m: AIModel) => m.id === aiConfig.model) || 
+                               availableModels.find((m: AIModel) => m.id === aiConfig.model);
+          const provider = aiConfig.provider || 'openrouter';
+          const isVisionModel = provider === 'openrouter' ? 
+                               (aiConfig.model.includes('claude') || 
+                                aiConfig.model.includes('gpt-4') || 
+                                aiConfig.model.includes('gemini') ||
+                                aiConfig.model.includes('vision')) :
+                               provider === 'ollama' ? 
+                               (aiConfig.model.includes('llava') || aiConfig.model.includes('vision')) :
+                               false; // LM Studio models depend on what's loaded
+          const isDefault = provider === 'openrouter' && aiConfig.model === DEFAULT_MODEL;
           
           return (
             <div style={{ marginTop: '8px' }}>
@@ -713,8 +787,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         />
       </div>
 
-
-
       {/* Game Status */}
       <div style={{
         marginTop: '20px',
@@ -723,8 +795,29 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         borderRadius: '8px',
         fontSize: '12px'
       }}>
-        <div style={{ fontWeight: 'bold', marginBottom: '8px', color: 'white' }}>
-          Game Status
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '8px' 
+        }}>
+          <span style={{ fontWeight: 'bold', color: 'white' }}>Game Status</span>
+          {onLoadRom && (
+            <button 
+              className="button" 
+              style={{ 
+                fontSize: '10px', 
+                padding: '4px 8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }} 
+              onClick={handleLoadRomClick}
+            >
+              <Upload size={12} />
+              Load ROM
+            </button>
+          )}
         </div>
         <div style={{ color: 'rgba(255,255,255,0.8)' }}>
           <div>Game: {gameState.currentGame || 'None loaded'}</div>
@@ -856,6 +949,15 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         <div>• Z/X: A/B Buttons</div>
         <div>• Enter/Space: Start/Select</div>
       </div>
+
+             {/* File Upload Input */}
+       <input
+         type="file"
+         ref={fileInputRef}
+         accept=".gb,.gbc"
+         onChange={handleFileUpload}
+         style={{ display: 'none' }}
+       />
     </div>
   );
 };

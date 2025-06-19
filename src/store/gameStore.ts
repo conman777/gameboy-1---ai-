@@ -13,6 +13,9 @@ export interface AIConfig {
   model: string;
   temperature: number;
   maxTokens: number;
+  provider?: 'openrouter' | 'lmstudio' | 'ollama';
+  lmStudioUrl?: string;
+  ollamaUrl?: string;
 }
 
 export interface UsageStats {
@@ -61,9 +64,12 @@ const initialState: GameState = {
   isMuted: false,
   aiConfig: {
     apiKey: '',
-    model: 'anthropic/claude-3-haiku',
+    model: '',
     temperature: 0.7,
-    maxTokens: 1000
+    maxTokens: 1000,
+    provider: 'openrouter',
+    lmStudioUrl: 'http://localhost:1234',
+    ollamaUrl: 'http://localhost:11434'
   },
   usageStats: {
     totalPromptTokens: 0,

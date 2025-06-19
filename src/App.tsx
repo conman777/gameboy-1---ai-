@@ -273,6 +273,7 @@ function App() {
                   onStopGame={stopGame}
                   onClearMemory={handleClearMemory}
                   onResetUsageStats={resetUsageStats}
+                  onLoadRom={handleGameLoad}
                 />
                 
                 {/* Manual GameBoy Controls */}
