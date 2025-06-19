@@ -1,3 +1,15 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run build:*)",
+      "Bash(rm:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm install)",
+      "Bash(npx vite:*)",
+      "Bash(yarn install)"
+    ]
+  },
   "enableAllProjectMcpServers": false
 }
